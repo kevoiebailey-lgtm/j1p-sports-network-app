@@ -1,0 +1,798 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isTeamMemberOrSandbox(teamId) {
+      return isAuthenticated() || (
+        teamId != null && (
+          teamId == 'demo-team' || 
+          teamId == 'sandbox' || 
+          teamId.matches('(?i).*sandbox.*') || 
+          teamId.matches('(?i).*demo.*')
+        )
+      );
+    }
+    
+    function isDocumentAuthor() {
+      return isAuthenticated() && (
+        request.auth.uid == resource.data.authorId ||
+        request.auth.uid == resource.data.userId ||
+        request.auth.uid == resource.data.uid ||
+        request.auth.uid == resource.data.photographerId ||
+        request.auth.uid == resource.data.uploadedBy ||
+        request.auth.uid == resource.data.creatorId ||
+        request.auth.uid == resource.data.scoutId ||
+        request.auth.uid == resource.data.directorId ||
+        request.auth.uid == resource.data.coachUserId
+      );
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'kevoiebailey@gmail.com' ||
+          request.auth.token.email.matches('(?i)kevoiebailey@gmail\\.com')
+        )) ||
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        request.auth.token.role == 'ADMIN' ||
+        request.auth.token.role == 'director' ||
+        request.auth.token.role == 'tournament_director' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ADMIN' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'director' ||
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'tournament_director'
+        )) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // 1. User Profiles & Rosters
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) || isAdmin();
+      allow update: if (isOwner(userId) && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']) || resource.data.role == null)) || isAdmin();
+      allow delete: if isAdmin();
+
+      match /game_stats/{statId} {
+        allow read: if true;
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      match /cheerData/{docId} {
+        allow read: if true;
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      match /purchased_photos/{photoId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      match /purchased_media/{mediaId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      match /purchases/{purchaseId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      match /saved_plays/{playId} {
+        allow read: if true;
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      match /bookmarks/{bookmarkId} {
+        allow read: if true;
+        allow write: if isOwner(userId) || isAdmin();
+      }
+
+      match /graphic_requests/{requestId} {
+        allow read: if true;
+        allow write: if isOwner(userId) || isAdmin();
+      }
+    }
+
+    // 2. Athlete Records & Scouting Profiles
+    match /athletes/{athleteId} {
+      allow read: if true;
+      allow write: if isOwner(athleteId) || isAdmin() || isAuthenticated();
+    }
+
+    match /scouts/{scoutId} {
+      allow read: if true;
+      allow write: if isOwner(scoutId) || isAdmin();
+    }
+
+    match /scouting_notes/{noteId} {
+      allow read: if isAuthenticated() && (resource.data.scoutId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && (resource.data.scoutId == request.auth.uid || isAdmin());
+    }
+
+    match /combine_results/{resultId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    // 3. Public Sports Gallery, Albums & Photos (Admin creates galleries, public reads)
+    match /albums/{albumId} {
+      allow read: if true;
+      allow create, write: if isAdmin() || (isAuthenticated() && (request.resource.data.authorId == request.auth.uid || request.resource.data.createdBy == request.auth.uid || request.resource.data.photographerId == request.auth.uid || request.resource.data.creatorId == request.auth.uid));
+      allow update, delete: if isAdmin() || (isAuthenticated() && (resource.data.authorId == request.auth.uid || resource.data.createdBy == request.auth.uid || resource.data.photographerId == request.auth.uid || resource.data.creatorId == request.auth.uid));
+
+      match /photos/{photoId} {
+        allow read: if true;
+        allow create, write: if isAdmin() || (isAuthenticated() && (request.resource.data.authorId == request.auth.uid || request.resource.data.photographerId == request.auth.uid || request.resource.data.creatorId == request.auth.uid));
+        allow update, delete: if isAdmin() || (isAuthenticated() && (resource.data.authorId == request.auth.uid || resource.data.photographerId == request.auth.uid || resource.data.creatorId == request.auth.uid));
+      }
+
+      match /Photos/{photoId} {
+        allow read: if true;
+        allow create, write: if isAdmin() || (isAuthenticated() && (request.resource.data.authorId == request.auth.uid || request.resource.data.photographerId == request.auth.uid));
+        allow update, delete: if isAdmin() || (isAuthenticated() && (resource.data.authorId == request.auth.uid || resource.data.photographerId == request.auth.uid));
+      }
+    }
+
+    match /Albums/{albumId} {
+      allow read: if true;
+      allow create, write: if isAdmin() || (isAuthenticated() && (request.resource.data.authorId == request.auth.uid || request.resource.data.createdBy == request.auth.uid || request.resource.data.photographerId == request.auth.uid));
+      allow update, delete: if isAdmin() || (isAuthenticated() && (resource.data.authorId == request.auth.uid || resource.data.createdBy == request.auth.uid || resource.data.photographerId == request.auth.uid));
+
+      match /Photos/{photoId} {
+        allow read: if true;
+        allow create, write: if isAdmin() || (isAuthenticated() && (request.resource.data.authorId == request.auth.uid || request.resource.data.photographerId == request.auth.uid));
+        allow update, delete: if isAdmin() || (isAuthenticated() && (resource.data.authorId == request.auth.uid || resource.data.photographerId == request.auth.uid));
+      }
+
+      match /photos/{photoId} {
+        allow read: if true;
+        allow create, write: if isAdmin() || (isAuthenticated() && (request.resource.data.authorId == request.auth.uid || request.resource.data.photographerId == request.auth.uid));
+        allow update, delete: if isAdmin() || (isAuthenticated() && (resource.data.authorId == request.auth.uid || resource.data.photographerId == request.auth.uid));
+      }
+    }
+
+    match /gallery/{mediaId} {
+      allow read: if true;
+      allow create, write: if isAdmin() || (isAuthenticated() && (request.resource.data.photographerId == request.auth.uid || request.resource.data.authorId == request.auth.uid || request.resource.data.uploadedBy == request.auth.uid || request.resource.data.creatorId == request.auth.uid));
+      allow update, delete: if isAdmin() || (isAuthenticated() && (resource.data.photographerId == request.auth.uid || resource.data.authorId == request.auth.uid || resource.data.uploadedBy == request.auth.uid || resource.data.creatorId == request.auth.uid));
+    }
+
+    match /media_vault/{vaultId} {
+      allow read: if true;
+      allow create, write: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    // 4. Highlight Videos, Broadcasts & Game Reels
+    match /highlights/{highlightId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    // PlayLab Plays Security
+    match /plays/{playId} {
+      // Allow read if you own it OR if you explicitly marked it public
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid || 
+        resource.data.isPublic == true ||
+        isAdmin()
+      );
+      
+      // Allow create only if setting yourself as owner
+      allow create: if request.auth != null && (
+        request.resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+      
+      // Allow edit and delete ONLY if you are the creator
+      allow update, delete: if request.auth != null && (
+        resource.data.userId == request.auth.uid || 
+        isAdmin()
+      );
+    }
+
+    match /videos/{videoId} {
+      allow read: if true;
+      allow create, write: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /reels/{reelId} {
+      allow read: if true;
+      allow create, write: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /highlightReels/{reelId} {
+      allow read: if true;
+      allow create, write: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /clips/{clipId} {
+      allow read: if true;
+      allow create, write: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /VideoViewLogs/{logId} {
+      allow read: if true;
+      allow create, write: if true;
+    }
+
+    // 5. Events, Tournaments, Brackets & Schedules
+    match /events/{eventId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+      
+      match /registrations/{regId} {
+        allow read: if true;
+        allow create: if isAuthenticated() || true;
+        allow update, delete: if isOwner(resource.data.userId) || isAdmin();
+
+        match /roster/{athleteId} {
+          allow read: if true;
+          allow write: if true;
+        }
+      }
+
+      match /rsvps/{rsvpId} {
+        allow read: if true;
+        allow write: if isAuthenticated() || true;
+      }
+
+      match /attendees/{attendeeId} {
+        allow read: if true;
+        allow write: if isAuthenticated() || isAdmin();
+      }
+
+      match /games/{gameId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+    }
+
+    match /tournaments/{tournamentId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+
+      match /games/{gameId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+
+      match /schedules/{scheduleId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+    }
+
+    match /games/{gameId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    match /matches/{matchId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    match /tournamentMatches/{matchId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    match /seasons/{seasonId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+
+      match /teams/{teamId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+    }
+
+    match /teams/{teamId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+
+      match /games/{gameId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+
+      match /schedules/{scheduleId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+
+      match /liveCallout/{calloutId} {
+        allow read: if true;
+        allow write: if isTeamMemberOrSandbox(teamId) || isAdmin();
+      }
+
+      match /live_sessions/{sessionId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated();
+      }
+
+      match /roster/{athleteId} {
+        allow read: if true;
+        allow create, update: if true;
+        allow delete: if isAdmin() || isAuthenticated();
+      }
+
+      match /playbooks/{playbookId} {
+        allow read: if true;
+        allow write: if isAdmin() || isAuthenticated() || isTeamMemberOrSandbox(teamId);
+      }
+    }
+
+    // 6. Organization, Team & Club Roster Collections
+    match /Organizations/{orgId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /Teams/{teamId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /Rosters/{rosterId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /OrgMembers/{memberId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    // 7. Event Check-in & Pass Scanner Ledger
+    match /checkins/{checkinId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || true;
+      allow update, delete: if isAdmin() || isAuthenticated();
+    }
+
+    // 8. Global Site Announcements, Weather Alerts & Live Game Clocks
+    match /liveGameClocks/{gameId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /tournamentAlerts/{alertId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /poolBrackets/{bracketId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    match /site_announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // 9. Sponsor & Ad Management
+    match /ads/{adId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /adCampaigns/{adId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    // 10. Unified Locker Room / Social Feed Posts & Comments (All Members Can Post Photos)
+    match /posts/{postId} {
+      allow read: if true;
+      
+      // All authenticated members can create posts
+      allow create: if isAuthenticated() && (
+        request.resource.data.authorId == request.auth.uid || 
+        isAdmin() ||
+        !('authorId' in request.resource.data)
+      );
+
+      // Only the author can edit or delete their post, or users can toggle reactions & comments
+      allow update: if isAuthenticated() && (
+        resource.data.authorId == request.auth.uid || 
+        isAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasAny(['likes', 'reactions', 'userReactions', 'commentsCount', 'viewsCount', 'metrics'])
+      );
+
+      allow delete: if isAuthenticated() && (
+        resource.data.authorId == request.auth.uid || isAdmin()
+      );
+                            
+      // Nested Comments Subcollection
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isAuthenticated() && (
+          request.resource.data.authorId == request.auth.uid || isAdmin() || !('authorId' in request.resource.data)
+        );
+        allow update, delete: if isAuthenticated() && (
+          resource.data.authorId == request.auth.uid || isAdmin()
+        );
+      }
+    }
+
+    match /socialPosts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /lockerRoomPosts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /locker_room_posts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /{path=**}/posts/{postId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /comments/{commentId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || isAdmin();
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+
+    match /likes/{likeId} {
+      allow read: if true;
+      allow create, delete, update: if isAuthenticated() || true;
+    }
+
+    match /reactions/{reactionId} {
+      allow read: if true;
+      allow create, delete, update: if isAuthenticated() || true;
+    }
+
+    match /follows/{followId} {
+      allow read: if true;
+      allow create, delete, update: if isAuthenticated() || true;
+    }
+
+    match /user_follows/{followId} {
+      allow read: if true;
+      allow create, delete, update: if isAuthenticated() || true;
+    }
+
+    match /activity/{activityId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /activity_feed/{feedId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    // 11. Blog & Editorial Articles (Admin creates and manages content)
+    match /blog_posts/{blogId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /blogs/{blogId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 12. Media Bookings & Service Inquiries
+    match /bookings/{bookingId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin() || isDocumentAuthor();
+    }
+
+    // 13. Live Streams & Game Broadcast Rooms
+    match /liveStreams/{streamId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+
+      match /chat/{msgId} {
+        allow read: if true;
+        allow create: if isAuthenticated() || true;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /streamRooms/{roomId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+
+      match /chat/{msgId} {
+        allow read: if true;
+        allow create: if isAuthenticated() || true;
+        allow update, delete: if isAdmin();
+      }
+    }
+
+    match /liveGames/{gameId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    // 14. Real-time Messaging, Chats, Direct Messages & User Inboxes
+    match /chats/{chatId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+
+      match /messages/{msgId} {
+        allow read: if true;
+        allow write: if isAuthenticated() || true;
+      }
+    }
+
+    match /direct_messages/{dmId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+
+      match /messages/{msgId} {
+        allow read: if true;
+        allow write: if isAuthenticated() || true;
+      }
+    }
+
+    match /followers/{followerId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || true;
+    }
+
+    match /fcm_tokens/{tokenId} {
+      allow read, write: if isAuthenticated() || true;
+    }
+
+    // 15. Notifications
+    match /notifications/{notifId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || true;
+      allow update, delete: if isAuthenticated() || isAdmin();
+    }
+
+    // 16. Stripe Financial Logs & Tournament Entry Fees
+    match /stripe_payments/{paymentId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    match /tournament_entries/{entryId} {
+      allow read: if isAuthenticated() || isAdmin();
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    // 17. Hardened Commerce Orders, Customer Vaults & Creator Earnings
+    match /paypal_payments/{paymentId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow write: if isAdmin() || isAuthenticated();
+    }
+
+    match /purchases/{purchaseId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid == resource.data.buyerUid || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.userId || 
+        request.auth.uid == request.resource.data.buyerUid || 
+        isAdmin()
+      );
+      allow update: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid == resource.data.buyerUid || 
+        isAdmin()
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /media_purchases/{purchaseId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || 
+        request.auth.uid == resource.data.buyerUid || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.userId || 
+        request.auth.uid == request.resource.data.buyerUid || 
+        isAdmin()
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /paypal_orders/{orderId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.userId || 
+        isAdmin()
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /subscriptions/{subId} {
+      allow read: if isAuthenticated() && (
+        request.auth.uid == resource.data.userId || 
+        isAdmin()
+      );
+      allow create: if isAuthenticated() && (
+        request.auth.uid == request.resource.data.userId || 
+        isAdmin()
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /creator_earnings/{creatorId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == creatorId || isAdmin());
+      match /{allSubcollections=**} {
+        allow read, write: if isAuthenticated() && (request.auth.uid == creatorId || isAdmin());
+      }
+    }
+
+    match /creator_payout_profiles/{profileId} {
+      allow read, write: if isAuthenticated() && (request.auth.uid == profileId || isAdmin());
+    }
+
+    match /transactions/{txId} {
+      allow read, write: if isAdmin();
+    }
+
+    // 18. Game Sessions & Telemetry Pipeline
+    match /game_sessions/{teamId} {
+      allow read: if true;
+      allow write: if isTeamMemberOrSandbox(teamId) || isAdmin();
+      match /{allSubcollections=**} {
+        allow read: if true;
+        allow write: if isTeamMemberOrSandbox(teamId) || isAdmin();
+      }
+    }
+
+    // 19. Media, Galleries, Venues & System Catalog Collections
+    match /directors/{directorId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == directorId || isAdmin());
+    }
+
+    match /galleries/{galleryId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+      match /{allSubcollections=**} {
+        allow read: if true;
+        allow write: if isAuthenticated() || isAdmin();
+      }
+    }
+
+    match /event_galleries/{galleryId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+      match /{allSubcollections=**} {
+        allow read: if true;
+        allow write: if isAuthenticated() || isAdmin();
+      }
+    }
+
+    match /event_teams/{teamId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /venues/{venueId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /articles/{articleId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /broadcasts/{broadcastId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /tournament_broadcasts/{broadcastId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /members/{memberId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /CheckinRecords/{recordId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /checkIns/{recordId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /EventBrackets/{bracketId} {
+      allow read: if true;
+      allow write: if isAuthenticated() || isAdmin();
+    }
+
+    match /AdminVideos/{videoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /site_traffic_analytics/{docId} {
+      allow read: if isAdmin();
+      allow create, update: if true;
+    }
+
+    match /site_ad_impressions/{docId} {
+      allow read: if isAdmin();
+      allow create, update: if true;
+    }
+
+    match /host_applications/{appId} {
+      allow read: if isAdmin();
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // 20. Digital Compliance & Athlete Waivers
+    match /waivers/{waiverId} {
+      allow read: if true;
+      allow create: if true;
+      allow update, delete: if isAdmin();
+    }
+
+    // 21. Futuristic Athlete Graphic Requests & Custom Play Cards
+    match /graphic_requests/{requestId} {
+      allow read: if true;
+      allow create: if isAuthenticated() || true;
+      allow update, delete: if isDocumentAuthor() || isAdmin();
+    }
+  }
+}
+
+
+

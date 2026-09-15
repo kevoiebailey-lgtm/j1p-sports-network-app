@@ -1,0 +1,262 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (
+        request.auth.uid == 'ADMIN_UID' ||
+        (request.auth.token.email != null && (
+          request.auth.token.email == 'kevoiebailey@gmail.com' ||
+          request.auth.token.email.matches('(?i)kevoiebailey@gmail\\.com')
+        )) ||
+        request.auth.token.admin == true ||
+        request.auth.token.role == 'admin' ||
+        request.auth.token.role == 'ADMIN' ||
+        request.auth.token.role == 'director' ||
+        request.auth.token.role == 'tournament_director'
+      );
+    }
+    
+    // Strict Image Type Validation (JPEG, PNG, WebP, GIF)
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Video Type Validation (MP4, QuickTime, WebM - Admins Only)
+    function isVideo() {
+      return request.resource.contentType.matches('video/.*');
+    }
+
+    // Max 25MB Image File Size Limit
+    function isValidImageSize() {
+      return request.resource.size < 25 * 1024 * 1024;
+    }
+
+    // Max 250MB Video File Size Limit (Admins only)
+    function isValidVideoSize() {
+      return request.resource.size < 250 * 1024 * 1024;
+    }
+
+    // 1. Official Media Gallery
+    // A. Preview / Watermarked Files (stored under gallery/previews/{fileName}) - Publicly viewable by anyone
+    match /gallery/previews/{fileName} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /gallery/previews/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // B. Original / Clean Files (stored under gallery/originals/{photoId}) - No watermark
+    // Clean Download Permissions:
+    // - Admins have full access
+    // - Content creators / photographers can download their own original uploads
+    // - Signed-in members who purchased $(request.auth.uid + '_' + photoId) in purchases collection can download
+    // - Unauthenticated visitors or unpaid members CANNOT download
+    match /gallery/originals/{photoId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        firestore.exists(/databases/(default)/documents/purchases/$(request.auth.uid + '_' + photoId)) ||
+        (resource != null && resource.metadata != null && (
+          resource.metadata.creatorId == request.auth.uid ||
+          resource.metadata.photographerId == request.auth.uid ||
+          resource.metadata.userId == request.auth.uid
+        ))
+      );
+      allow write: if isAdmin();
+    }
+    match /gallery/originals/{albumId}/{photoId} {
+      allow read: if isAuthenticated() && (
+        isAdmin() ||
+        firestore.exists(/databases/(default)/documents/purchases/$(request.auth.uid + '_' + photoId)) ||
+        (resource != null && resource.metadata != null && (
+          resource.metadata.creatorId == request.auth.uid ||
+          resource.metadata.photographerId == request.auth.uid ||
+          resource.metadata.userId == request.auth.uid
+        ))
+      );
+      allow write: if isAdmin();
+    }
+
+    // General Gallery Catch-all
+    match /gallery/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isAdmin() && isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 1b. Self-Serve Creator Galleries & LumaPic High-Speed Batch Ingest System
+    match /galleries/{albumId}/thumbs/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+      allow delete: if isAuthenticated() || isAdmin();
+    }
+
+    match /galleries/{albumId}/previews/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated();
+      allow delete: if isAuthenticated() || isAdmin();
+    }
+
+    match /galleries/{albumId}/vault/{allPaths=**} {
+      // Vault is private master storage: NO public or client reads (only accessible via Firebase Admin SDK / Signed URLs after payment)
+      // Writes allowed for authenticated creators uploading their original masters
+      allow read: if false;
+      allow write: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /galleries/{albumId}/originals/{allPaths=**} {
+      // Original Master: restricted access (NO public client reads; gated via backend download route or Admin)
+      allow read: if false;
+      allow write: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /albums/{albumId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isAdmin() && isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /Albums/{albumId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isAdmin() && isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Photos Storage: Public Thumbnails & Secured Master Originals
+    match /photos/thumbnails/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isAdmin() && isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /photos/originals/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (
+        (isAdmin() && isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAdmin();
+    }
+
+    match /photos/{photoId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isAdmin() && isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 2. Social Wall (Community Photos - NO watermark, anyone can view, signed-in members can upload)
+    match /social_wall/{fileName} {
+      allow read: if true;
+      allow create: if isAuthenticated() && (
+        (isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /social_wall/{allPaths=**} {
+      allow read: if true;
+      allow create: if isAuthenticated() && (
+        (isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    match /posts/{postId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAuthenticated() || isAdmin();
+    }
+
+    match /post_media/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAuthenticated() || isAdmin();
+    }
+
+    match /social_videos/{userId}/{fileName} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && (
+        (isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // 3. Media Vault & General Asset Storage
+    match /media_vault/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAuthenticated() || isAdmin();
+    }
+
+    // 4. User Profile Images & Avatars
+    match /profile_images/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && isImage() && isValidImageSize();
+      allow delete: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // 4b. User Profile Assets
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin()) && isImage() && isValidImageSize();
+      allow delete: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // 5. Video Broadcasts & Direct Reels (Admin Only)
+    match /videos/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isAdmin() && isVideo() && isValidVideoSize();
+      allow delete: if isAdmin();
+    }
+
+    // 6. Universal Fallback: Public Read, Authenticated Member Photo Uploads, Admin Video Uploads
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if isAuthenticated() && (
+        (isImage() && isValidImageSize()) || 
+        (isAdmin() && isVideo() && isValidVideoSize())
+      );
+      allow delete: if isAuthenticated() || isAdmin();
+    }
+  }
+}
+
+
+
+

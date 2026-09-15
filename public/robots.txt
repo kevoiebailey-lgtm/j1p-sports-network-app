@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Allow: /members
+Allow: /profile/*
+Allow: /play/*
+Allow: /events
+Allow: /tournaments
+Allow: /blog
+Allow: /blog/*
+Allow: /combine
+Allow: /gallery
+Allow: /faq
+Allow: /advertise
+Allow: /media
+
+# Disallow Private / Admin / Internal Action Routes
+Disallow: /admin
+Disallow: /admin/*
+Disallow: /operations
+Disallow: /checkout
+Disallow: /paypal-checkout
+Disallow: /stripe-checkout
+Disallow: /drive
+
+Sitemap: https://app.just1play.com/sitemap.xml
