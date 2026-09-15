@@ -1,0 +1,129 @@
+{
+  "name": "Just1Play Sports Network",
+  "short_name": "Just1Play",
+  "description": "The universal platform for youth & flag football recruiting, player scouting cards, verified combine metrics, live tournament schedules, and athlete highlight reels.",
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#08090C",
+  "theme_color": "#08090C",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": [
+    "sports",
+    "social",
+    "entertainment",
+    "lifestyle",
+    "productivity"
+  ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "48x48 72x72 96x96 128x128 144x144 152x152 192x192 384x384 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scout Athletes",
+      "short_name": "Athletes",
+      "description": "Search verified athletes, HUDL clips, and combine statistics",
+      "url": "/?tab=home&source=shortcut",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Community & Reels",
+      "short_name": "Social",
+      "description": "Watch highlight reels, player discussions, and coach announcements",
+      "url": "/?tab=social&source=shortcut",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Tournaments & Events",
+      "short_name": "Events",
+      "description": "View live tournament brackets, showcase dates, and sync calendar",
+      "url": "/?tab=events&source=shortcut",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Digital ID & Profile",
+      "short_name": "Scout Card",
+      "description": "Access your verified digital sports ID card and QR gate pass",
+      "url": "/?tab=profile&source=shortcut",
+      "icons": [
+        {
+          "src": "/icon.svg",
+          "sizes": "192x192",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/default-thumbnail.svg",
+      "sizes": "1280x720",
+      "type": "image/svg+xml",
+      "form_factor": "wide",
+      "label": "Just1Play Sports Network Desktop Dashboard"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "600x600",
+      "type": "image/svg+xml",
+      "form_factor": "narrow",
+      "label": "Just1Play Mobile Scout Hub"
+    }
+  ],
+  "share_target": {
+    "action": "/?action=share",
+    "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
+

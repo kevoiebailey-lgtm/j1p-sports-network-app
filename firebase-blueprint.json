@@ -1,0 +1,381 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "Core user account with assigned role",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "role": { "type": "string", "enum": ["athlete", "scout", "director", "viewer", "admin", "coach_scout", "tournament_director"] },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["role", "displayName", "email"]
+    },
+    "athletes": {
+      "title": "Athlete Record",
+      "description": "Athlete profile with combine metrics and media clips",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "displayName": { "type": "string" },
+        "position": { "type": "string" },
+        "gradYear": { "type": "number" },
+        "school": { "type": "string" },
+        "sport": { "type": "string" },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "height": { "type": "string" },
+            "weight": { "type": "string" },
+            "dash40": { "type": "number" },
+            "vertLeap": { "type": "number" },
+            "gpa": { "type": "number" },
+            "verified": { "type": "boolean" }
+          }
+        },
+        "mediaUrls": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "waiverSigned": { "type": "boolean" }
+      },
+      "required": ["userId", "position", "gradYear", "school"]
+    },
+    "scouts": {
+      "title": "Scout Profile",
+      "description": "Coach or scout profile with recruiting watchlist",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "organization": { "type": "string" },
+        "verified": { "type": "boolean" },
+        "watchlist": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["userId", "organization"]
+    },
+    "scouting_notes": {
+      "title": "Scouting Evaluation Note",
+      "description": "Private athlete evaluations and rating notes by scouts",
+      "type": "object",
+      "properties": {
+        "scoutId": { "type": "string" },
+        "athleteId": { "type": "string" },
+        "athleteName": { "type": "string" },
+        "rating": { "type": "number" },
+        "notes": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["scoutId", "athleteId", "rating", "notes"]
+    },
+    "tournaments": {
+      "title": "Tournament Record",
+      "description": "Tournament metadata and court status",
+      "type": "object",
+      "properties": {
+        "directorId": { "type": "string" },
+        "title": { "type": "string" },
+        "sport": { "type": "string" },
+        "venue": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "courtsCount": { "type": "number" }
+          }
+        },
+        "status": { "type": "string", "enum": ["upcoming", "live", "completed"] },
+        "delayMinutes": { "type": "number" },
+        "delayReason": { "type": "string" }
+      },
+      "required": ["directorId", "title", "sport", "status"]
+    },
+    "games": {
+      "title": "Tournament Game",
+      "description": "Individual court game match data and live score",
+      "type": "object",
+      "properties": {
+        "tournamentId": { "type": "string" },
+        "courtId": { "type": "string" },
+        "courtName": { "type": "string" },
+        "scheduledTime": { "type": "string" },
+        "homeTeam": { "type": "string" },
+        "awayTeam": { "type": "string" },
+        "homeScore": { "type": "number" },
+        "awayScore": { "type": "number" },
+        "status": { "type": "string", "enum": ["Upcoming", "Live", "Halftime", "Final"] }
+      },
+      "required": ["courtId", "homeTeam", "awayTeam", "status"]
+    },
+    "posts": {
+      "title": "Locker Room Social Post",
+      "description": "Athlete highlights, video reels, and lounge community discussions",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "feedType": { "type": "string", "enum": ["video", "lounge"] },
+        "sport": { "type": "string" },
+        "caption": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "reactions": {
+          "type": "object",
+          "properties": {
+            "hype": { "type": "number" },
+            "sauce": { "type": "number" },
+            "clutch": { "type": "number" },
+            "bigW": { "type": "number" }
+          }
+        },
+        "commentsCount": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["authorId", "authorName", "feedType", "sport"]
+    },
+    "comments": {
+      "title": "Locker Room Post Comment",
+      "description": "Real-time replies on athlete highlights and lounge posts",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorAvatar": { "type": "string" },
+        "authorRole": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["authorId", "authorName", "text"]
+    },
+    "stripe_payments": {
+      "title": "Stripe Payment Record",
+      "description": "Secure payment logs and telemetry for registrations and subscriptions",
+      "type": "object",
+      "properties": {
+        "sessionId": { "type": "string" },
+        "eventId": { "type": "string" },
+        "teamId": { "type": "string" },
+        "amountTotal": { "type": "number" },
+        "currency": { "type": "string" },
+        "customerEmail": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["sessionId", "amountTotal", "paymentStatus"]
+    },
+    "tournament_entries": {
+      "title": "Tournament Entry & Fee Record",
+      "description": "Team registration ledger and entry fee status",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string" },
+        "teamId": { "type": "string" },
+        "teamName": { "type": "string" },
+        "divisionName": { "type": "string" },
+        "coachUserId": { "type": "string" },
+        "headCoachEmail": { "type": "string" },
+        "amountPaid": { "type": "number" },
+        "paymentStatus": { "type": "string" }
+      },
+      "required": ["eventId", "teamId", "teamName", "amountPaid"]
+    },
+    "game_stats": {
+      "title": "Athlete Game Stat Entry",
+      "description": "Multi-sport game logs, statistics, opponent details, and stat sheets",
+      "type": "object",
+      "properties": {
+        "athleteId": { "type": "string" },
+        "sport": { "type": "string" },
+        "gameDate": { "type": "string" },
+        "opponent": { "type": "string" },
+        "eventName": { "type": "string" },
+        "stats": { "type": "object" },
+        "statSheetUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["athleteId", "sport", "gameDate"]
+    },
+    "gallery": {
+      "title": "Gallery & Media Album Item",
+      "description": "4K sports photos, digital albums, tagged athletes, pricing, and downloads",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "albumTitle": { "type": "string" },
+        "sport": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "uploadedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["url", "sport"]
+    },
+    "videos": {
+      "title": "Video & Reel Vault",
+      "description": "Athlete game tape, scouting reels, YouTube/Vimeo embeds, and direct uploads",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "thumbnailUrl": { "type": "string" },
+        "sport": { "type": "string" },
+        "category": { "type": "string" },
+        "duration": { "type": "string" },
+        "athleteId": { "type": "string" },
+        "athleteName": { "type": "string" },
+        "isPinned": { "type": "boolean" },
+        "viewsCount": { "type": "number" },
+        "uploadedBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "videoUrl", "sport"]
+    },
+    "checkins": {
+      "title": "Event Check-in & Pass Scan",
+      "description": "Real-time QR pass scans, bib check-ins, gate entry logs, and attendance ledger",
+      "type": "object",
+      "properties": {
+        "eventId": { "type": "string" },
+        "eventName": { "type": "string" },
+        "passId": { "type": "string" },
+        "attendeeName": { "type": "string" },
+        "attendeeEmail": { "type": "string" },
+        "attendeeRole": { "type": "string" },
+        "teamName": { "type": "string" },
+        "bibNumber": { "type": "string" },
+        "scannedBy": { "type": "string" },
+        "scannedAt": { "type": "string" },
+        "gateLocation": { "type": "string" },
+        "status": { "type": "string", "enum": ["VERIFIED", "DUPLICATE_WARNING", "FLAGGED", "MANUAL_OVERRIDE"] }
+      },
+      "required": ["eventId", "attendeeName", "status", "scannedAt"]
+    },
+    "site_announcements": {
+      "title": "Global Site Announcement & Banner",
+      "description": "System-wide broadcasts, emergency alerts, weather delay notices, and marketing tickers",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "warning", "emergency", "tournament", "promo"] },
+        "isActive": { "type": "boolean" },
+        "linkUrl": { "type": "string" },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "message", "isActive"]
+    },
+    "plays": {
+      "title": "Tactical Play & Route Tree",
+      "description": "Custom-drawn tactical plays with player token positions, individual route waypoint vectors, progression reads, and blocking schemes",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "sport": { "type": "string", "enum": ["flag_5v5", "flag_7v7", "football_11v11", "basketball", "soccer", "lacrosse"] },
+        "sportName": { "type": "string" },
+        "players": {
+          "type": "array",
+          "items": { "type": "object" }
+        },
+        "formation": { "type": "string" },
+        "personnel": { "type": "string" },
+        "passProtection": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "isInteractive": { "type": "boolean" },
+        "type": { "type": "string" },
+        "category": { "type": "string" },
+        "athleteId": { "type": "string" },
+        "athleteName": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "sport", "players"]
+    }
+  },
+  "firestore": {
+    "/plays/{playId}": {
+      "schema": "plays",
+      "description": "Custom tactical plays with routes and player coordinates"
+    },
+    "/users/{uid}": {
+      "schema": "users",
+      "description": "Core user account documents"
+    },
+    "/users/{uid}/game_stats/{statId}": {
+      "schema": "game_stats",
+      "description": "Athlete game performance stats and logs"
+    },
+    "/gallery/{mediaId}": {
+      "schema": "gallery",
+      "description": "Public and vaulted sports media gallery assets"
+    },
+    "/videos/{videoId}": {
+      "schema": "videos",
+      "description": "Platform video reels, game broadcasts, and athlete highlights"
+    },
+    "/checkins/{checkinId}": {
+      "schema": "checkins",
+      "description": "Event and game check-in scan ledger"
+    },
+    "/site_announcements/{announcementId}": {
+      "schema": "site_announcements",
+      "description": "Global admin announcements and alert banners"
+    },
+    "/events/{eventId}": {
+      "schema": "tournaments",
+      "description": "Tournament and showcase schedules and details"
+    },
+    "/stripe_payments/{paymentId}": {
+      "schema": "stripe_payments",
+      "description": "Stripe payment and fee telemetry documents (Admin & Coordinator restricted)"
+    },
+    "/tournament_entries/{entryId}": {
+      "schema": "tournament_entries",
+      "description": "Tournament entry fee ledger (Admin & Coordinator restricted)"
+    },
+    "/posts/{postId}": {
+      "schema": "posts",
+      "description": "Locker room social highlight reels and lounge posts"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": "comments",
+      "description": "Threaded comments for locker room posts"
+    },
+    "/athletes/{athleteId}": {
+      "schema": "athletes",
+      "description": "Athlete profile documents and combine metrics"
+    },
+    "/scouts/{scoutId}": {
+      "schema": "scouts",
+      "description": "Scout directory and watchlist storage"
+    },
+    "/scouting_notes/{noteId}": {
+      "schema": "scouting_notes",
+      "description": "Scout private athlete notes and ratings"
+    },
+    "/tournaments/{tournamentId}": {
+      "schema": "tournaments",
+      "description": "Tournaments created by directors"
+    },
+    "/tournaments/{tournamentId}/games/{gameId}": {
+      "schema": "games",
+      "description": "Games on courts inside a tournament"
+    }
+  }
+}

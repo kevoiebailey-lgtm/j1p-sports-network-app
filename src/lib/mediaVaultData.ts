@@ -1,0 +1,537 @@
+import { MediaVaultItem } from '../types/mediaVault';
+
+export const MAJOR_EVENTS_LIST = [
+  'All Events / Showcases',
+  'North Jersey Lightning Tryouts',
+  'Tri-State Elite 7v7 Championship',
+  'Prep Hoops Summer Showcase',
+  'Garden State Invitational',
+  'East Coast EYBL Showcase',
+  'Bergen Catholic vs Don Bosco Showcase',
+  'Metro Youth Flag Football Classic'
+];
+
+export const INITIAL_MEDIA_VAULT_ITEMS: MediaVaultItem[] = [
+  // 1. Game Photos
+  {
+    id: 'photo-njl-01',
+    type: 'photo',
+    title: 'Clutch Three-Point Follow Through in Quarterfinals',
+    description: 'Crisp 24.2 MP action capture of Maya Sanchez sinking the dagger corner triple in the 4th quarter.',
+    sport: 'Basketball',
+    eventName: 'Prep Hoops Summer Showcase',
+    eventDate: '2026-07-28',
+    mediaUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=85&w=1800',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=80&w=800',
+    highResDownloadUrl: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&q=100&w=3600',
+    resolution: '24.2 MP RAW (6000x4000)',
+    price: 4.99,
+    venue: 'Sportika Sports Complex, Manalapan NJ',
+    opponents: 'North Jersey Lightning vs Team Final EYBL',
+    photographer: 'Marcus Cole / Just1Play Media',
+    cameraExif: {
+      camera: 'Sony Alpha 1',
+      lens: 'FE 70-200mm f/2.8 GM OSS II',
+      shutter: '1/2000s',
+      iso: 'ISO 2000',
+      aperture: 'f/2.8'
+    },
+    taggedAthletes: [
+      {
+        id: 'ath-maya-01',
+        name: 'Maya Sanchez',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        school: 'West Orange High',
+        gradYear: '2026',
+        position: 'Point Guard',
+        sport: 'Basketball'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 3420,
+    likesCount: 184,
+    ratingScore: 9.8,
+    isOfficial: true,
+    createdAt: '2026-07-28T18:30:00Z'
+  },
+  {
+    id: 'photo-flag-02',
+    type: 'photo',
+    title: 'End-Zone Diving Touchdown Pylon Catch',
+    description: 'High-speed sideline capture of Brianna Davis extending full-body across the pylon in the 17U Girls Championship.',
+    sport: "Girls' Flag Football",
+    eventName: 'Tri-State Elite 7v7 Championship',
+    eventDate: '2026-07-19',
+    mediaUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=85&w=1800',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=800',
+    highResDownloadUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=100&w=3600',
+    resolution: '45.7 MP RAW (8256x5504)',
+    price: 4.99,
+    venue: 'Iron Peak Sports Complex, Hillsborough NJ',
+    opponents: 'Jersey Blitz vs Florida Elite 17U',
+    photographer: 'Sarah Jenkins / Just1Play Official',
+    cameraExif: {
+      camera: 'Nikon Z9',
+      lens: 'NIKKOR Z 400mm f/2.8 TC VR S',
+      shutter: '1/3200s',
+      iso: 'ISO 800',
+      aperture: 'f/2.8'
+    },
+    taggedAthletes: [
+      {
+        id: 'ath-brianna-02',
+        name: 'Brianna Davis',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        school: 'Montclair High',
+        gradYear: '2026',
+        position: 'WR / Safety',
+        sport: "Girls' Flag Football"
+      }
+    ],
+    isPurchased: true,
+    isPinnedToProfile: true,
+    viewCount: 5120,
+    likesCount: 310,
+    ratingScore: 9.9,
+    isOfficial: true,
+    createdAt: '2026-07-19T20:15:00Z'
+  },
+  {
+    id: 'photo-lax-03',
+    type: 'photo',
+    title: 'Top Corner Stick Rip on Fast Break',
+    description: 'Explosive sidearm shooting mechanics freeze-frame during the semifinal round.',
+    sport: 'Lacrosse',
+    eventName: 'East Coast EYBL Showcase',
+    eventDate: '2026-07-14',
+    mediaUrl: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&q=85&w=1800',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&q=80&w=800',
+    highResDownloadUrl: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&q=100&w=3600',
+    resolution: '30.4 MP RAW (6720x4480)',
+    price: 4.99,
+    venue: 'Rutgers University Turf Stadium, Piscataway NJ',
+    opponents: 'NJ Pride Lacrosse vs Philly Stars',
+    photographer: 'David Miller / Media Line',
+    cameraExif: {
+      camera: 'Canon EOS R3',
+      lens: 'RF 100-300mm f/2.8 L IS USM',
+      shutter: '1/2500s',
+      iso: 'ISO 1250',
+      aperture: 'f/2.8'
+    },
+    taggedAthletes: [
+      {
+        id: 'ath-marcus-03',
+        name: 'Marcus Vance',
+        avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80',
+        school: 'Delbarton Prep',
+        gradYear: '2026',
+        position: 'Midfield / Attack',
+        sport: 'Lacrosse'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 2190,
+    likesCount: 142,
+    ratingScore: 9.6,
+    isOfficial: true,
+    createdAt: '2026-07-14T15:45:00Z'
+  },
+  {
+    id: 'photo-vball-04',
+    type: 'photo',
+    title: 'Middle Blocker Roof Spike Rejection',
+    description: 'Apex vertical block timing captured over the net in championship pool play.',
+    sport: 'Volleyball',
+    eventName: 'Garden State Invitational',
+    eventDate: '2026-07-08',
+    mediaUrl: 'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?auto=format&fit=crop&q=85&w=1800',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?auto=format&fit=crop&q=80&w=800',
+    highResDownloadUrl: 'https://images.unsplash.com/photo-1587280501635-68a0e82cd5ff?auto=format&fit=crop&q=100&w=3600',
+    resolution: '24.2 MP RAW',
+    price: 4.99,
+    venue: 'Apex Athletic Center, Fairfield NJ',
+    opponents: 'Jersey Shore VBC vs Garden State Premier',
+    photographer: 'Elena Rostova / Pro Shots',
+    cameraExif: {
+      camera: 'Sony A9 II',
+      lens: 'FE 135mm f/1.8 GM',
+      shutter: '1/1600s',
+      iso: 'ISO 3200',
+      aperture: 'f/2.0'
+    },
+    taggedAthletes: [
+      {
+        id: 'ath-chloe-04',
+        name: 'Chloe Zhang',
+        avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80',
+        school: 'Livingston High',
+        gradYear: '2027',
+        position: 'Middle Blocker',
+        sport: 'Volleyball'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 1870,
+    likesCount: 95,
+    ratingScore: 9.4,
+    isOfficial: true,
+    createdAt: '2026-07-08T14:10:00Z'
+  },
+  {
+    id: 'photo-soc-05',
+    type: 'photo',
+    title: 'Top-Bins Free Kick Strike Celebration',
+    description: 'Curled 28-yard free kick beating the defensive wall into the upper 90.',
+    sport: 'Soccer',
+    eventName: 'Bergen Catholic vs Don Bosco Showcase',
+    eventDate: '2026-06-25',
+    mediaUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=85&w=1800',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=80&w=800',
+    highResDownloadUrl: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&q=100&w=3600',
+    resolution: '33.0 MP RAW',
+    price: 4.99,
+    venue: 'Crusader Stadium, Oradell NJ',
+    opponents: 'Bergen Catholic vs Don Bosco Prep',
+    photographer: 'Julian Perez / Tri-State Sideline',
+    cameraExif: {
+      camera: 'Canon EOS R5',
+      lens: 'RF 400mm f/2.8 L IS USM',
+      shutter: '1/2500s',
+      iso: 'ISO 640',
+      aperture: 'f/2.8'
+    },
+    taggedAthletes: [
+      {
+        id: 'ath-lucas-05',
+        name: 'Lucas Rossi',
+        avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+        school: 'Bergen Catholic',
+        gradYear: '2026',
+        position: 'Attacking Midfielder',
+        sport: 'Soccer'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 4200,
+    likesCount: 275,
+    ratingScore: 9.7,
+    isOfficial: true,
+    createdAt: '2026-06-25T17:00:00Z'
+  },
+  {
+    id: 'photo-track-06',
+    type: 'photo',
+    title: 'Sprint Hurdle Clearance at Championship Finish',
+    description: 'Precision hurdle trail leg mechanics captured at full sprint speed.',
+    sport: 'Track & Field',
+    eventName: 'Garden State Invitational',
+    eventDate: '2026-06-18',
+    mediaUrl: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&q=85&w=1800',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&q=80&w=800',
+    highResDownloadUrl: 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&q=100&w=3600',
+    resolution: '45.0 MP RAW',
+    price: 4.99,
+    venue: 'Monmouth University Track, West Long Branch NJ',
+    opponents: 'All-State Track & Field Invitational',
+    photographer: 'Anthony Hall / Track Focus',
+    cameraExif: {
+      camera: 'Sony Alpha 1',
+      lens: 'FE 300mm f/2.8 GM OSS',
+      shutter: '1/4000s',
+      iso: 'ISO 400',
+      aperture: 'f/2.8'
+    },
+    taggedAthletes: [
+      {
+        id: 'ath-jordan-06',
+        name: 'Jordan Hayes',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        school: 'Union Catholic',
+        gradYear: '2026',
+        position: '110m Hurdles / Decathlon',
+        sport: 'Track & Field'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 1650,
+    likesCount: 88,
+    ratingScore: 9.5,
+    isOfficial: true,
+    createdAt: '2026-06-18T13:20:00Z'
+  },
+
+  // 2. Video Reels (Highlights)
+  {
+    id: 'reel-bball-01',
+    type: 'video_reel',
+    title: 'Top 10 Ankle Breakers & Poster Dunks | Summer Circuit',
+    description: 'High-energy 4K reel featuring the nastiest crossovers, transition alley-oops, and clutch step-back jumpers.',
+    sport: 'Basketball',
+    eventName: 'Prep Hoops Summer Showcase',
+    eventDate: '2026-07-27',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-basketball-player-dunking-a-ball-4043-large.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&q=80&w=800',
+    resolution: '4K UHD 60fps (Slow-Mo Ready)',
+    price: 9.99,
+    duration: '02:18',
+    venue: 'Sportika Complex, Manalapan NJ',
+    opponents: 'Top 40 All-Star Game',
+    photographer: 'Just1Play Media Crew',
+    taggedAthletes: [
+      {
+        id: 'ath-maya-01',
+        name: 'Maya Sanchez',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        school: 'West Orange High',
+        gradYear: '2026',
+        position: 'Point Guard',
+        sport: 'Basketball'
+      },
+      {
+        id: 'ath-altanay-02',
+        name: 'Altanay O.',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+        school: 'North Star Academy',
+        gradYear: '2027',
+        position: 'Point Guard',
+        sport: 'Basketball'
+      }
+    ],
+    isPurchased: true,
+    isPinnedToProfile: true,
+    viewCount: 14200,
+    likesCount: 890,
+    ratingScore: 9.9,
+    isOfficial: true,
+    videoType: 'native',
+    createdAt: '2026-07-27T21:00:00Z'
+  },
+  {
+    id: 'reel-flag-02',
+    type: 'video_reel',
+    title: 'Brianna Davis QB Masterclass | 6 Pass TDs & Scramble Runs',
+    description: 'Official recruiter highlight cut demonstrating deep-ball accuracy, pocket mobility, and red-zone poise.',
+    sport: "Girls' Flag Football",
+    eventName: 'Tri-State Elite 7v7 Championship',
+    eventDate: '2026-07-20',
+    mediaUrl: 'https://youtu.be/3B52fcgv7Hs?si=mSKPF3aZyqn8mLa7',
+    embedUrl: 'https://www.youtube.com/embed/3B52fcgv7Hs',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=800',
+    resolution: '4K Broadcast Reel',
+    price: 9.99,
+    duration: '03:45',
+    venue: 'Iron Peak Sports Complex, Hillsborough NJ',
+    opponents: 'Jersey Blitz vs Florida Elite Final',
+    photographer: 'Just1Play Media Network',
+    taggedAthletes: [
+      {
+        id: 'ath-brianna-02',
+        name: 'Brianna Davis',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        school: 'Montclair High',
+        gradYear: '2026',
+        position: 'Quarterback',
+        sport: "Girls' Flag Football"
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 18450,
+    likesCount: 1240,
+    ratingScore: 10.0,
+    isOfficial: true,
+    videoType: 'youtube',
+    createdAt: '2026-07-20T22:30:00Z'
+  },
+  {
+    id: 'reel-fb-03',
+    type: 'video_reel',
+    title: 'Malcolm Bagley Senior Season Career FB Tape',
+    description: 'Explosive varsity running back film showing 4.45s 40-yard breakaway speed, contact balance, and pass-pro pickups.',
+    sport: 'Football',
+    eventName: 'North Jersey Lightning Tryouts',
+    eventDate: '2026-07-15',
+    mediaUrl: 'https://youtu.be/Z75m1XEDODk?si=Og5PjOHMYR2WBj5j',
+    embedUrl: 'https://www.youtube.com/embed/Z75m1XEDODk',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1566577739112-5180d4bf9390?auto=format&fit=crop&q=80&w=800',
+    resolution: '1080p 60fps HD',
+    price: 9.99,
+    duration: '04:12',
+    venue: 'East Orange Campus Stadium, NJ',
+    opponents: 'Super Football Conference Highlights',
+    photographer: 'East Orange Media',
+    taggedAthletes: [
+      {
+        id: 'ath-malcolm-03',
+        name: 'Malcolm Bagley',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+        school: 'East Orange Campus',
+        gradYear: '2026',
+        position: 'RB / Safety',
+        sport: 'Football'
+      }
+    ],
+    isPurchased: true,
+    isPinnedToProfile: false,
+    viewCount: 9800,
+    likesCount: 650,
+    ratingScore: 9.8,
+    isOfficial: false,
+    videoType: 'youtube',
+    createdAt: '2026-07-15T19:00:00Z'
+  },
+  {
+    id: 'reel-lax-04',
+    type: 'video_reel',
+    title: 'Midfield Transition Defense & Fastbreak Strikes',
+    description: 'Ground ball control, transition clearing, and rapid overhand shooting highlights.',
+    sport: 'Lacrosse',
+    eventName: 'East Coast EYBL Showcase',
+    eventDate: '2026-07-10',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-lacrosse-player-practicing-shots-on-goal-41221-large.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1519766304817-4f37bda74a29?auto=format&fit=crop&q=80&w=800',
+    resolution: '4K UHD 60fps',
+    price: 9.99,
+    duration: '02:50',
+    venue: 'Rutgers University Turf, Piscataway NJ',
+    opponents: 'EYBL Midfield All-Stars',
+    photographer: 'Just1Play Media',
+    taggedAthletes: [
+      {
+        id: 'ath-marcus-03',
+        name: 'Marcus Vance',
+        avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80',
+        school: 'Delbarton Prep',
+        gradYear: '2026',
+        position: 'Midfield / Attack',
+        sport: 'Lacrosse'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 4620,
+    likesCount: 310,
+    ratingScore: 9.6,
+    isOfficial: true,
+    videoType: 'native',
+    createdAt: '2026-07-10T16:00:00Z'
+  },
+
+  // 3. Raw Tape (Full Unedited Match / Combine Footage)
+  {
+    id: 'tape-full-bball-01',
+    type: 'raw_tape',
+    title: 'Full Game Tape: West Orange vs Ridgewood Championship Game',
+    description: 'Uncut sideline 4K game film with multi-angle tactical footage for collegiate coaches and analytics coordinators.',
+    sport: 'Basketball',
+    eventName: 'North Jersey Lightning Tryouts',
+    eventDate: '2026-07-26',
+    mediaUrl: 'https://vimeo.com/1186569502?share=copy&fl=sv&fe=ci',
+    embedUrl: 'https://player.vimeo.com/video/1186569502',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&q=80&w=800',
+    resolution: '4K RAW Sideline Angle (Multi-Cam)',
+    price: 14.99,
+    duration: '48:30',
+    venue: 'West Orange High Gym, NJ',
+    opponents: 'West Orange Mountaineers vs Ridgewood Maroons',
+    photographer: 'Just1Play Broadcast Operations',
+    taggedAthletes: [
+      {
+        id: 'ath-maya-01',
+        name: 'Maya Sanchez',
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        school: 'West Orange High',
+        gradYear: '2026',
+        position: 'Point Guard',
+        sport: 'Basketball'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 6540,
+    likesCount: 420,
+    ratingScore: 9.7,
+    isOfficial: true,
+    videoType: 'vimeo',
+    createdAt: '2026-07-26T21:30:00Z'
+  },
+  {
+    id: 'tape-full-flag-02',
+    type: 'raw_tape',
+    title: 'Raw Combine Drills: 40-Yard Dash, Pro Agility & Vertical Jump Stills',
+    description: 'Official electronic laser-timed testing combine footage and mechanics capture for collegiate evaluation.',
+    sport: "Girls' Flag Football",
+    eventName: 'Tri-State Elite 7v7 Championship',
+    eventDate: '2026-07-18',
+    mediaUrl: 'https://assets.mixkit.co/videos/preview/mixkit-athletes-running-on-the-track-41223-large.mp4',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1517649763962-0c623266010b?auto=format&fit=crop&q=80&w=800',
+    resolution: '4K 120fps High-Speed Precision',
+    price: 14.99,
+    duration: '22:15',
+    venue: 'Iron Peak Sports Complex, Hillsborough NJ',
+    opponents: 'All-Combine Top 100 Recruits',
+    photographer: 'Just1Play Combine Operations',
+    taggedAthletes: [
+      {
+        id: 'ath-brianna-02',
+        name: 'Brianna Davis',
+        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
+        school: 'Montclair High',
+        gradYear: '2026',
+        position: 'WR / Safety',
+        sport: "Girls' Flag Football"
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 4890,
+    likesCount: 310,
+    ratingScore: 9.8,
+    isOfficial: true,
+    videoType: 'native',
+    createdAt: '2026-07-18T11:00:00Z'
+  },
+  {
+    id: 'tape-full-rivalry-03',
+    type: 'raw_tape',
+    title: 'Raw Endzone & Sideline Film: Bergen Catholic vs Don Bosco',
+    description: 'Complete unedited all-22 coaches angle game tape for schematic breakdown and defensive scouting.',
+    sport: 'Football',
+    eventName: 'Bergen Catholic vs Don Bosco Showcase',
+    eventDate: '2026-06-20',
+    mediaUrl: 'https://vimeo.com/1190343868?share=copy&fl=sv&fe=ci',
+    embedUrl: 'https://player.vimeo.com/video/1190343868',
+    thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&q=80&w=800',
+    resolution: 'All-22 High-Angle Coaching Film',
+    price: 14.99,
+    duration: '1:15:00',
+    venue: 'Crusader Stadium, Oradell NJ',
+    opponents: 'Bergen Catholic Crusaders vs Don Bosco Ironmen',
+    photographer: 'Tri-State High School Film Unit',
+    taggedAthletes: [
+      {
+        id: 'ath-lucas-05',
+        name: 'Lucas Rossi',
+        avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80',
+        school: 'Bergen Catholic',
+        gradYear: '2026',
+        position: 'Athlete',
+        sport: 'Football'
+      }
+    ],
+    isPurchased: false,
+    isPinnedToProfile: false,
+    viewCount: 12100,
+    likesCount: 840,
+    ratingScore: 9.9,
+    isOfficial: true,
+    videoType: 'vimeo',
+    createdAt: '2026-06-20T19:30:00Z'
+  }
+];

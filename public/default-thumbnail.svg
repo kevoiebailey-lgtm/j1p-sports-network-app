@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="100%" height="100%">
+  <defs>
+    <radialGradient id="bgGlow" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#141a29"/>
+      <stop offset="60%" stop-color="#080a10"/>
+      <stop offset="100%" stop-color="#020305"/>
+    </radialGradient>
+    <linearGradient id="camGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#384252" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#111622" stop-opacity="0.4"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Deep Dark Background -->
+  <rect width="800" height="800" fill="url(#bgGlow)" />
+  
+  <!-- Subtle Vignette Frame -->
+  <rect width="800" height="800" fill="none" stroke="#1e293b" stroke-width="2" opacity="0.4"/>
+
+  <!-- Camera Silhouette (Centered behind text) -->
+  <g transform="translate(400, 390)" opacity="0.35">
+    <!-- Camera Body Outline -->
+    <path d="M-180,-60 L-100,-60 L-70,-110 L70,-110 L100,-60 L180,-60 C200,-60 215,-45 215,-25 L215,120 C215,140 200,155 180,155 L-180,155 C-200,155 -215,140 -215,120 L-215,-25 C-215,-45 -200,-60 -180,-60 Z" 
+          fill="none" stroke="url(#camGrad)" stroke-width="6" stroke-linejoin="round" />
+    
+    <!-- Flash/Viewfinder Box -->
+    <rect x="-40" y="-128" width="80" height="18" rx="4" fill="none" stroke="#475569" stroke-width="4" />
+    
+    <!-- Outer Lens Ring -->
+    <circle cx="0" cy="30" r="105" fill="none" stroke="#334155" stroke-width="8" />
+    <circle cx="0" cy="30" r="85" fill="none" stroke="#0ea5e9" stroke-width="3" opacity="0.6" />
+    <circle cx="0" cy="30" r="65" fill="#030712" stroke="#1e293b" stroke-width="4" />
+  </g>
+
+  <!-- "JUST 1 PLAY" Text Branding -->
+  <g transform="translate(400, 420)">
+    <!-- Text Drop Shadow Glow -->
+    <text text-anchor="middle" font-family="'Inter', 'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="76" letter-spacing="4" fill="#000000" opacity="0.8" y="4">
+      JUST <tspan fill="#DC2626">1</tspan> PLAY
+    </text>
+    
+    <!-- Main Text -->
+    <text text-anchor="middle" font-family="'Inter', 'Montserrat', 'Arial Black', sans-serif" font-weight="900" font-size="76" letter-spacing="4" fill="#FFFFFF" y="0">
+      JUST <tspan fill="#FF1E27" font-weight="900">1</tspan> PLAY
+    </text>
+  </g>
+
+  <!-- Top & Bottom Accent Lines -->
+  <line x1="220" y1="320" x2="260" y2="320" stroke="#FF1E27" stroke-width="4" stroke-linecap="round"/>
+  <line x1="540" y1="500" x2="580" y2="500" stroke="#00FF26" stroke-width="4" stroke-linecap="round"/>
+</svg>

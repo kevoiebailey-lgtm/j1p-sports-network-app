@@ -1,0 +1,52 @@
+@import "../index.css";
+
+/* Championship Operating System Design Tokens */
+:root {
+  --obsidian: #08090C;
+  --titanium: #12151C;
+  --hyper-teal: #00F0D0;
+  --solar-gold: #FFB800;
+  --neon-red: #FF334B;
+  --ice-white: #FFFFFF;
+  --silver: #E2E8F0;
+}
+
+/* Universal Mobile Safe Inset Clearance (Task 60) */
+.pb-safe-dock {
+  padding-bottom: max(10rem, calc(8.5rem + env(safe-area-inset-bottom, 24px)));
+}
+
+.scroll-container-dock-safe {
+  padding-bottom: max(10rem, calc(8.5rem + env(safe-area-inset-bottom, 24px)));
+}
+
+/* Specular Hairline Surface System (Task 55) */
+.j1p-card {
+  @apply bg-[#12151C]/95 backdrop-blur-sm border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] rounded-2xl;
+}
+
+.j1p-specular {
+  @apply border border-white/[0.08] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)];
+}
+
+.j1p-glow-teal {
+  @apply shadow-[0_0_30px_-8px_rgba(0,240,208,0.25)];
+}
+
+.j1p-glow-gold {
+  @apply shadow-[0_0_30px_-8px_rgba(255,184,0,0.25)];
+}
+
+.j1p-glow-red {
+  @apply shadow-[0_0_30px_-8px_rgba(255,51,75,0.30)];
+}
+
+/* Responsive Micro-Spring Physics & Tactility */
+.j1p-tactile,
+.j1p-spring,
+.btn-primary,
+.nav-pill,
+button:active:not([disabled]) {
+  @apply transition-all duration-150 active:scale-[0.97] select-none;
+}
+
