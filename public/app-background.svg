@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <!-- Pro Carbon Sports Studio Ambient Radial Gradient -->
+    <radialGradient id="proCarbonGlow" cx="25%" cy="18%" r="85%" fx="20%" fy="12%">
+      <stop offset="0%" stop-color="#32424A" stop-opacity="0.9" />
+      <stop offset="28%" stop-color="#263238" stop-opacity="0.95" />
+      <stop offset="65%" stop-color="#1A2327" stop-opacity="0.98" />
+      <stop offset="100%" stop-color="#11171A" stop-opacity="1" />
+    </radialGradient>
+
+    <!-- Warm Orange Flare Accent (Top-Left Atmospheric Stadium Glow) -->
+    <radialGradient id="orangeAtmosphere" cx="12%" cy="8%" r="50%">
+      <stop offset="0%" stop-color="#FF6A00" stop-opacity="0.12" />
+      <stop offset="50%" stop-color="#FFC857" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="#FF6A00" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Electric Cyan Rim Lighting (Bottom-Right Stadium Floodlight) -->
+    <radialGradient id="cyanAtmosphere" cx="88%" cy="92%" r="55%">
+      <stop offset="0%" stop-color="#00B8D4" stop-opacity="0.10" />
+      <stop offset="60%" stop-color="#00B8D4" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Outer Studio Vignette Overlay for Crisp Contrast -->
+    <radialGradient id="studioVignette" cx="50%" cy="50%" r="72%">
+      <stop offset="50%" stop-color="#000000" stop-opacity="0" />
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.60" />
+    </radialGradient>
+
+    <!-- Fine Canvas Texture Filter -->
+    <filter id="carbonTexture" x="0%" y="0%" width="100%" height="100%" filterUnits="objectBoundingBox">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04 0.04" numOctaves="4" result="noise" seed="88" />
+      <feColorMatrix type="matrix" values="
+        0 0 0 0 0.15
+        0 0 0 0 0.20
+        0 0 0 0 0.23
+        0 0 0 0 0.12 0" in="noise" result="coloredNoise" />
+      <feBlend mode="overlay" in="SourceGraphic" in2="coloredNoise" result="blend" />
+    </filter>
+  </defs>
+
+  <!-- Base Carbon Studio Stage Layer -->
+  <rect width="100%" height="100%" fill="url(#proCarbonGlow)" filter="url(#carbonTexture)" />
+
+  <!-- Atmospheric Stadium Color Glows -->
+  <rect width="100%" height="100%" fill="url(#orangeAtmosphere)" />
+  <rect width="100%" height="100%" fill="url(#cyanAtmosphere)" />
+
+  <!-- Vignette Perimeter -->
+  <rect width="100%" height="100%" fill="url(#studioVignette)" />
+</svg>

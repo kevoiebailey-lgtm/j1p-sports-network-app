@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en" class="dark bg-[#08090C] text-white min-h-[100dvh]" style="background-color: #08090C; color: #FFFFFF;">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>Just1Play</title>
+    <meta name="description" content="Digital sports media, recruiting, and social analytics platform for multi-sport athletes and college recruiters." />
+    <meta property="og:title" content="Just1Play" />
+    <meta property="og:description" content="Digital sports media, recruiting, and social analytics platform for multi-sport athletes and college recruiters." />
+    
+    <script>
+      (function() {
+        // Theme initialization
+        try {
+          var saved = localStorage.getItem('j1p_theme');
+          var theme = (saved === 'light' || saved === 'dark') ? saved : 'dark';
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(theme);
+        } catch (e) {
+          document.documentElement.classList.add('dark');
+        }
+
+        // Suppress benign Vite dev-server HMR WebSocket notices in sandboxed iframe environment
+        function isViteWsNotice(err) {
+          if (!err) return false;
+          var msg = typeof err === 'string' ? err : (err.message || err.reason || (err.toString && err.toString()) || '');
+          var stack = err.stack || '';
+          return msg.indexOf('WebSocket closed without opened') !== -1 ||
+                 msg.indexOf('failed to connect to websocket') !== -1 ||
+                 msg.indexOf('WebSocket') !== -1 ||
+                 stack.indexOf('WebSocket') !== -1;
+        }
+
+        var origConsoleError = console.error;
+        console.error = function() {
+          var args = Array.prototype.slice.call(arguments);
+          var combined = args.map(function(a) {
+            return (a && (a.message || a.stack || (typeof a === 'string' ? a : ''))) || '';
+          }).join(' ');
+          if (isViteWsNotice(combined)) {
+            return;
+          }
+          return origConsoleError.apply(console, arguments);
+        };
+
+        var origConsoleWarn = console.warn;
+        console.warn = function() {
+          var args = Array.prototype.slice.call(arguments);
+          var combined = args.map(function(a) {
+            return (a && (a.message || a.stack || (typeof a === 'string' ? a : ''))) || '';
+          }).join(' ');
+          if (isViteWsNotice(combined)) {
+            return;
+          }
+          return origConsoleWarn.apply(console, arguments);
+        };
+
+        window.addEventListener('unhandledrejection', function(event) {
+          if (isViteWsNotice(event.reason)) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          }
+        });
+
+        window.addEventListener('error', function(event) {
+          if (isViteWsNotice(event.error) || isViteWsNotice(event.message)) {
+            event.preventDefault();
+            if (event.stopImmediatePropagation) event.stopImmediatePropagation();
+          }
+        }, true);
+      })();
+    </script>
+
+    <!-- PWA & Mobile Web App Meta (Championship OS Obsidian Palette) -->
+    <meta name="theme-color" content="#08090C" />
+    <meta name="theme-color" content="#08090C" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#08090C" media="(prefers-color-scheme: light)" />
+    <meta name="description" content="Digital sports media, recruiting, and social analytics platform for multi-sport athletes and college recruiters." />
+    <meta name="application-name" content="Just1Play" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Just1Play" />
+    <meta name="format-detection" content="telephone=no" />
+    
+    <!-- Athletic Display Fonts for Graphic Studio & Print Cards -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:ital,wght@0,700;0,800;0,900;1,800;1,900&family=Bebas+Neue&family=Chakra+Petch:ital,wght@0,700;1,700&family=Orbitron:wght@700;800;900&family=Rajdhani:ital,wght@0,700;1,700;1,800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+
+    <!-- PWA Icons & Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="mask-icon" href="/icon.svg" color="#FF6A00" />
+
+    <style>
+      /* Fallback system typography & obsidian reset to prevent Times New Roman serif flash and raw browser buttons */
+      html, body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        background-color: #08090C !important;
+        color: #FFFFFF !important;
+        margin: 0;
+        padding: 0;
+        -webkit-tap-highlight-color: transparent;
+      }
+      button, input, select, textarea {
+        font-family: inherit;
+      }
+    </style>
+  </head>
+  <body class="min-h-[100dvh] bg-[#08090C] text-white overflow-x-hidden antialiased" style="background-color: #08090C; color: #FFFFFF;">
+    <div id="root" class="min-h-[100dvh] bg-[#08090C] text-white"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

@@ -1,0 +1,10 @@
+{
+  "name": "Just1Play",
+  "description": "Digital sports media, recruiting, and social analytics platform for multi-sport athletes and college recruiters.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "notifications"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
