@@ -262,17 +262,22 @@ service cloud.firestore {
 
       match /games/{gameId} {
         allow read: if true;
-        allow write: if isAdmin() || isAuthenticated();
+        allow write: if isAdmin();
       }
     }
 
     match /tournaments/{tournamentId} {
       allow read: if true;
-      allow write: if isAdmin() || isAuthenticated();
+      allow write: if isAdmin();
 
       match /games/{gameId} {
         allow read: if true;
-        allow write: if isAdmin() || isAuthenticated();
+        allow write: if isAdmin();
+      }
+
+      match /matches/{matchId} {
+        allow read: if true;
+        allow write: if isAdmin();
       }
 
       match /schedules/{scheduleId} {
@@ -283,17 +288,17 @@ service cloud.firestore {
 
     match /games/{gameId} {
       allow read: if true;
-      allow write: if isAdmin() || isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /matches/{matchId} {
       allow read: if true;
-      allow write: if isAdmin() || isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /tournamentMatches/{matchId} {
       allow read: if true;
-      allow write: if isAdmin() || isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /seasons/{seasonId} {

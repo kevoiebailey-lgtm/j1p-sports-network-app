@@ -37,6 +37,7 @@ import {
 import { SportType, TournamentMode, UniversalScheduleItem } from '../../types/tournamentEngine';
 import { LiveScoresTicker } from '../LiveScoresTicker';
 import { Skeleton } from '../Common/SkeletonLoader';
+import { GlassPanel } from '../Common/GlassPanel';
 import { PrintableBracketModal } from './PrintableBracketModal';
 import { MatchCallDispatchModal } from './MatchCallDispatchModal';
 import { GameDayRosterPrintModal } from '../Roster/GameDayRosterPrintModal';
@@ -57,13 +58,13 @@ const WrestlingMatEngine = lazy(() => import('./Engines/WrestlingMatEngine').the
 const ScoreDeskAdapter = lazy(() => import('./ScoreDeskAdapter').then(m => ({ default: m.ScoreDeskAdapter })));
 
 const EngineShimmerFallback: React.FC = () => (
-  <div className="w-full space-y-4 p-4 sm:p-6 rounded-3xl bg-[#263238]/60 border border-[#24324F]/50 animate-pulse">
+  <GlassPanel className="w-full space-y-4 p-4 sm:p-6 rounded-3xl animate-pulse">
     <div className="flex items-center justify-between">
       <Skeleton variant="text" className="w-48 h-6" />
       <Skeleton variant="rect" className="w-24 h-8 rounded-xl" />
     </div>
     <Skeleton variant="rect" className="w-full h-64 rounded-2xl" />
-  </div>
+  </GlassPanel>
 );
 
 export const TournamentCenterView: React.FC = () => {
@@ -145,14 +146,14 @@ export const TournamentCenterView: React.FC = () => {
   const currentMode = getModeForSport(selectedSport);
 
   const sportsList: { id: SportType; label: string; icon: string; mode: string }[] = [
-    { id: 'flag_football', label: 'Flag Football', icon: '🏈', mode: 'Pool to Bracket' },
-    { id: 'football', label: 'Tackle Football', icon: '⚡', mode: 'Showcase Jamboree' },
-    { id: 'cheer', label: 'Cheer & Stunt', icon: '📣', mode: 'Performance Scored' },
-    { id: 'wrestling', label: 'Wrestling', icon: '🤼', mode: 'Mat & Bout Engine' },
-    { id: 'basketball', label: 'Basketball', icon: '🏀', mode: 'Double Elimination' },
-    { id: 'soccer', label: 'Soccer', icon: '⚽', mode: 'FIFA Points Table' },
-    { id: 'lacrosse', label: 'Lacrosse', icon: '🥍', mode: 'Cross-Division Pool' },
-    { id: 'track_field', label: 'Track & Field', icon: '🏃', mode: 'Laser Timed Heats' },
+    { id: 'flag_football', label: 'Flag Football', icon: 'ð', mode: 'Pool to Bracket' },
+    { id: 'football', label: 'Tackle Football', icon: 'â¡', mode: 'Showcase Jamboree' },
+    { id: 'cheer', label: 'Cheer & Stunt', icon: 'ð£', mode: 'Performance Scored' },
+    { id: 'wrestling', label: 'Wrestling', icon: 'ð¤¼', mode: 'Mat & Bout Engine' },
+    { id: 'basketball', label: 'Basketball', icon: 'ð', mode: 'Double Elimination' },
+    { id: 'soccer', label: 'Soccer', icon: 'â½', mode: 'FIFA Points Table' },
+    { id: 'lacrosse', label: 'Lacrosse', icon: 'ð¥', mode: 'Cross-Division Pool' },
+    { id: 'track_field', label: 'Track & Field', icon: 'ð', mode: 'Laser Timed Heats' },
   ];
 
   const divisionsList = [
@@ -290,7 +291,7 @@ export const TournamentCenterView: React.FC = () => {
       <LiveScoresTicker />
 
       {/* 2. Top Header & Control Center Dashboard */}
-      <div className="p-4 sm:p-6 md:p-8 rounded-3xl bg-[#090D16] border border-[#24324F] shadow-2xl relative overflow-hidden space-y-6">
+      <GlassPanel neon="cyan" className="p-4 sm:p-6 md:p-8 rounded-3xl relative overflow-hidden space-y-6">
         
         {/* Header Title Bar */}
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -352,7 +353,7 @@ export const TournamentCenterView: React.FC = () => {
 
         {/* Live Tournament Status Pulse Cards (Responsive CSS Grid: 1 col on mobile -> 2 col on tablet -> 4 col on desktop) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 pt-2">
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#263238]/60 border border-[#24324F] flex items-center justify-between">
+          <GlassPanel className="p-3.5 sm:p-4 rounded-2xl flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Active Sport</span>
               <div className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
@@ -365,7 +366,7 @@ export const TournamentCenterView: React.FC = () => {
             </span>
           </div>
 
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#263238]/60 border border-[#24324F] flex items-center justify-between">
+          <GlassPanel className="p-3.5 sm:p-4 rounded-2xl flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Division</span>
               <div className="text-sm sm:text-base font-black text-white truncate max-w-[130px] sm:max-w-none">
@@ -377,7 +378,7 @@ export const TournamentCenterView: React.FC = () => {
             </span>
           </div>
 
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#263238]/60 border border-[#24324F] flex items-center justify-between">
+          <GlassPanel className="p-3.5 sm:p-4 rounded-2xl flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Court / Field Radar</span>
               <div className="text-sm sm:text-base font-black text-emerald-400 flex items-center gap-1.5">
@@ -393,12 +394,12 @@ export const TournamentCenterView: React.FC = () => {
             </button>
           </div>
 
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-[#263238]/60 border border-[#24324F] flex items-center justify-between">
+          <GlassPanel className="p-3.5 sm:p-4 rounded-2xl flex items-center justify-between">
             <div className="space-y-0.5">
               <span className="text-[10px] text-slate-400 font-mono font-bold uppercase tracking-wider">Weather Broadcast</span>
               <div className="text-sm sm:text-base font-black text-white flex items-center gap-1.5">
                 <Radio className="w-3.5 h-3.5 text-cyan-400" />
-                <span>Clear • On Schedule</span>
+                <span>Clear â¢ On Schedule</span>
               </div>
             </div>
             <button 
@@ -502,7 +503,10 @@ export const TournamentCenterView: React.FC = () => {
             <Suspense fallback={<EngineShimmerFallback />}>
               {/* 1. Pool to Bracket (Soccer, Lacrosse, Hoops, Field Hockey, Flag Football) */}
               {currentMode === 'pool_to_bracket' && (
-                <PoolBracketEngine division={selectedDivision} />
+                <PoolBracketEngine
+                  tournamentId={tournamentId || locationState?.tournamentId || 'live-default'}
+                  division={selectedDivision}
+                />
               )}
 
               {/* 2. Showcase Jamboree (Football / Friendlies) */}
@@ -542,12 +546,12 @@ export const TournamentCenterView: React.FC = () => {
           </div>
         )}
 
-      </div>
+      </GlassPanel>
 
       {/* 7. Categorized Director Operations Hub Drawer / Modal */}
       {isDirectorHubOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md overflow-y-auto animate-fadeIn">
-          <div className="relative w-full max-w-3xl max-h-[90vh] bg-[#090D16] border border-[#24324F] rounded-3xl shadow-2xl overflow-y-auto no-scrollbar p-5 sm:p-6 space-y-6 my-auto">
+          <GlassPanel className="relative w-full max-w-3xl max-h-[90vh] rounded-3xl overflow-y-auto no-scrollbar p-5 sm:p-6 space-y-6 my-auto">
             
             {/* Modal Header */}
             <div className="flex items-center justify-between pb-4 border-b border-[#24324F]">
@@ -626,7 +630,7 @@ export const TournamentCenterView: React.FC = () => {
                 Close Hub
               </button>
             </div>
-          </div>
+          </GlassPanel>
         </div>
       )}
 
@@ -673,7 +677,7 @@ export const TournamentCenterView: React.FC = () => {
       <LockerRoomReelStudioModal
         isOpen={isReelStudioOpen}
         onClose={() => setIsReelStudioOpen(false)}
-        gameTitle="National Semifinal • SoCal Elite vs Philly Pride"
+        gameTitle="National Semifinal â¢ SoCal Elite vs Philly Pride"
       />
 
       {/* Gate Pass & Digital ID Scanner Modal */}

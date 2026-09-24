@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { 
   Trophy, 
   Layers, 
@@ -9,7 +9,12 @@ import {
   Sparkles,
   TrendingUp
 } from 'lucide-react';
-import { UniversalScheduleItem } from '../../../types/tournamentEngine';
+import {
+  advanceTournamentBracketMatch,
+  BracketNodeMatch,
+  persistLiveMatchState,
+  subscribeTournamentMatches,
+} from '../../../services/tournamentEngine';
 
 interface PoolTeamStats {
   teamName: string;
@@ -39,79 +44,134 @@ const INITIAL_POOL_B: PoolTeamStats[] = [
 ];
 
 interface PoolBracketEngineProps {
+  tournamentId?: string;
   division?: string;
   onAdvanceSeed?: (team: string, bracketRound: string) => void;
   activeView?: 'all' | 'standings' | 'brackets';
 }
 
+function emptyStanding(name: string): PoolTeamStats {
+  return { teamName: name, played: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDiff: 0, points: 0, seed: 99 };
+}
+
+function standingsFromMatches(matches: BracketNodeMatch[], pool: 'A' | 'B'): PoolTeamStats[] {
+  const section = pool === 'A' ? 'POOL_A' : 'POOL_B';
+  const poolMatches = matches.filter((m) => m.bracketSection === section || m.bracketType === 'ROUND_ROBIN_POOL' && (pool === 'A' ? m.round === 1 : m.round === 2));
+  const scoped = poolMatches.length ? poolMatches : [];
+  const table = new Map<string, PoolTeamStats>();
+
+  for (const match of scoped) {
+    const a = match.teamA_Name || 'TBD';
+    const b = match.teamB_Name || 'TBD';
+    if (!table.has(a)) table.set(a, emptyStanding(a));
+    if (!table.has(b)) table.set(b, emptyStanding(b));
+    if (match.status !== 'FINAL') continue;
+    const sa = Number(match.teamA_Score || 0);
+    const sb = Number(match.teamB_Score || 0);
+    const rowA = table.get(a)!;
+    const rowB = table.get(b)!;
+    rowA.played += 1;
+    rowB.played += 1;
+    rowA.goalsFor += sa;
+    rowA.goalsAgainst += sb;
+    rowB.goalsFor += sb;
+    rowB.goalsAgainst += sa;
+    if (sa > sb) {
+      rowA.wins += 1;
+      rowA.points += 3;
+      rowB.losses += 1;
+    } else if (sb > sa) {
+      rowB.wins += 1;
+      rowB.points += 3;
+      rowA.losses += 1;
+    } else {
+      rowA.draws += 1;
+      rowB.draws += 1;
+      rowA.points += 1;
+      rowB.points += 1;
+    }
+  }
+
+  return Array.from(table.values())
+    .map((row) => ({ ...row, goalDiff: row.goalsFor - row.goalsAgainst }))
+    .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff || b.goalsFor - a.goalsFor)
+    .map((row, idx) => ({ ...row, seed: idx + 1 }));
+}
+
 export const PoolBracketEngine: React.FC<PoolBracketEngineProps> = ({
+  tournamentId = 'live-default',
   division = 'Varsity Championship',
   onAdvanceSeed,
   activeView = 'all'
 }) => {
   const [activePool, setActivePool] = useState<'A' | 'B'>('A');
-  const [poolA, setPoolA] = useState<PoolTeamStats[]>(INITIAL_POOL_A);
-  const [poolB, setPoolB] = useState<PoolTeamStats[]>(INITIAL_POOL_B);
+  const [liveMatches, setLiveMatches] = useState<BracketNodeMatch[]>([]);
   const [bracketType, setBracketType] = useState<'single' | 'double'>('single');
   const [notification, setNotification] = useState<string | null>(null);
-  const [matches, setMatches] = useState({
-    semi1: {
-      id: 'm-semi-1',
-      teamA: 'SoCal Elite Vipers',
-      teamB: 'California Golden Bears',
-      scoreA: 4,
-      scoreB: 2,
-      status: 'FINAL',
-      winner: 'SoCal Elite Vipers'
-    },
-    semi2: {
-      id: 'm-semi-2',
-      teamA: 'Texas Outlaws Club',
-      teamB: 'Pacific Coast Storm',
-      scoreA: 3,
-      scoreB: 2,
-      status: 'FINAL',
-      winner: 'Texas Outlaws Club'
-    },
-    final: {
-      id: 'm-final-1',
-      teamA: 'SoCal Elite Vipers',
-      teamB: 'Texas Outlaws Club',
-      scoreA: 0,
-      scoreB: 0,
-      status: 'SCHEDULED',
-      winner: null as string | null
-    }
-  });
+  const [commitError, setCommitError] = useState<string | null>(null);
 
-  const handleUpdateMatchScore = (matchKey: 'semi1' | 'semi2' | 'final', scoreA: number, scoreB: number, finalize: boolean = false) => {
-    setMatches(prev => {
-      const match = { ...prev[matchKey], scoreA, scoreB };
+  useEffect(() => {
+    const unsub = subscribeTournamentMatches(tournamentId, setLiveMatches, (err) => setCommitError(err.message));
+    return () => unsub();
+  }, [tournamentId]);
+
+  const poolA = useMemo(() => {
+    const live = standingsFromMatches(liveMatches, 'A');
+    return live.length ? live : INITIAL_POOL_A;
+  }, [liveMatches]);
+  const poolB = useMemo(() => {
+    const live = standingsFromMatches(liveMatches, 'B');
+    return live.length ? live : INITIAL_POOL_B;
+  }, [liveMatches]);
+
+  const knockoutMatches = useMemo(() => {
+    return liveMatches
+      .filter((m) => m.bracketType !== 'ROUND_ROBIN_POOL' && m.bracketSection !== 'POOL_A' && m.bracketSection !== 'POOL_B')
+      .sort((a, b) => a.round - b.round || a.matchNumber - b.matchNumber);
+  }, [liveMatches]);
+
+  const maxRound = knockoutMatches.reduce((max, m) => Math.max(max, m.round || 1), 1);
+  const semiMatches = knockoutMatches.filter((m) => m.round === 1 || (maxRound > 1 && m.round < maxRound));
+  const finalMatches = knockoutMatches.filter((m) => m.round === maxRound);
+  const displaySemis = semiMatches.length ? semiMatches : knockoutMatches.slice(0, Math.max(0, knockoutMatches.length - 1));
+  const displayFinals = finalMatches.length ? finalMatches : knockoutMatches.slice(-1);
+
+  const handleUpdateMatchScore = async (match: BracketNodeMatch, scoreA: number, scoreB: number, finalize: boolean = false) => {
+    setCommitError(null);
+    try {
+      await persistLiveMatchState(tournamentId, match.id, {
+        teamA_Score: scoreA,
+        teamB_Score: scoreB,
+        homeScore: scoreA,
+        awayScore: scoreB,
+        status: finalize ? 'FINAL' : 'IN_PROGRESS',
+      });
       if (finalize) {
-        match.status = 'FINAL';
-        match.winner = scoreA > scoreB ? match.teamA : scoreB > scoreA ? match.teamB : (scoreA >= scoreB ? match.teamA : match.teamB);
+        const result = await advanceTournamentBracketMatch(tournamentId, match.id, scoreA, scoreB);
+        setNotification(`ð Auto-Progression: ${result.winnerName} advanced.`);
+        setTimeout(() => setNotification(null), 3500);
       }
-      
-      const newMatches = { ...prev, [matchKey]: match };
-
-      // Auto-advance winners into Final
-      if (matchKey === 'semi1' && match.winner) {
-        newMatches.final.teamA = match.winner;
-      } else if (matchKey === 'semi2' && match.winner) {
-        newMatches.final.teamB = match.winner;
-      }
-
-      setNotification(`🏆 Auto-Progression: ${match.winner || 'Match score'} updated! Bracket Tree recalculated.`);
-      setTimeout(() => setNotification(null), 3500);
-
-      return newMatches;
-    });
+    } catch (err: any) {
+      setCommitError(err?.message || 'Failed to commit bracket score.');
+    }
   };
 
   const currentPoolData = activePool === 'A' ? poolA : poolB;
 
-  const handleAdvance = (team: PoolTeamStats, targetRound: string) => {
-    setNotification(`⚡ Seed #${team.seed} ${team.teamName} advanced to ${targetRound}!`);
+  const handleAdvance = async (team: PoolTeamStats, targetRound: string) => {
+    const openSlot = knockoutMatches.find((m) => !m.teamA_Name || m.teamA_Name === 'TBD')
+      || knockoutMatches.find((m) => !m.teamB_Name || m.teamB_Name === 'TBD');
+    if (openSlot) {
+      const slotIsA = !openSlot.teamA_Name || openSlot.teamA_Name === 'TBD';
+      try {
+        await persistLiveMatchState(tournamentId, openSlot.id, slotIsA
+          ? { teamA_Id: team.teamName, teamA_Name: team.teamName, teamA_Seed: team.seed }
+          : { teamB_Id: team.teamName, teamB_Name: team.teamName, teamB_Seed: team.seed });
+      } catch (err: any) {
+        setCommitError(err?.message || 'Failed to seed knockout slot.');
+      }
+    }
+    setNotification(`â¡ Seed #${team.seed} ${team.teamName} advanced to ${targetRound}!`);
     setTimeout(() => setNotification(null), 3000);
     if (onAdvanceSeed) {
       onAdvanceSeed(team.teamName, targetRound);
@@ -163,6 +223,12 @@ export const PoolBracketEngine: React.FC<PoolBracketEngineProps> = ({
         </div>
       </div>
 
+      {commitError && (
+        <div className="p-3.5 rounded-2xl bg-red-950/80 border border-red-500/50 text-xs text-red-200 font-bold">
+          {commitError}
+        </div>
+      )}
+
       {notification && (
         <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-xs text-emerald-300 font-bold flex items-center gap-2 shadow-lg animate-fadeIn">
           <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
@@ -175,7 +241,7 @@ export const PoolBracketEngine: React.FC<PoolBracketEngineProps> = ({
         <div className="p-3 sm:p-4 bg-[#263238]/60 border-b border-[#24324F] flex items-center justify-between flex-wrap gap-2">
           <span className="text-xs font-black text-[#00B8D4] uppercase tracking-wider flex items-center gap-1.5">
             <TrendingUp className="w-4 h-4" />
-            <span>Pool {activePool} • Live Ranking Table</span>
+            <span>Pool {activePool} â¢ Live Ranking Table</span>
           </span>
           <span className="text-[10px] sm:text-[11px] text-slate-400 font-mono font-bold">
             Top 2 Advance to Championship
@@ -213,7 +279,7 @@ export const PoolBracketEngine: React.FC<PoolBracketEngineProps> = ({
 
               <div className="flex items-center justify-between pt-1 border-t border-[#24324F]/40 gap-2">
                 <span className="text-[10px] text-slate-400 font-mono">
-                  GF: {row.goalsFor} • GA: {row.goalsAgainst}
+                  GF: {row.goalsFor} â¢ GA: {row.goalsAgainst}
                 </span>
                 <button
                   onClick={() => handleAdvance(row, 'Championship Semifinals')}
@@ -331,102 +397,62 @@ export const PoolBracketEngine: React.FC<PoolBracketEngineProps> = ({
 
         {/* Visual Bracket Flow */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-          {/* Semifinals */}
           <div className="space-y-4">
             <span className="text-[10px] font-mono font-bold text-[#00B8D4] uppercase tracking-wider">
-              Round 1: Semifinals (Live Progression)
+              Knockout Rounds (Live Progression)
             </span>
-
-            {/* Match 1 */}
-            <div className="p-4 rounded-2xl bg-[#263238]/60 border border-[#24324F] space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
-                <span>Semi #1 • Main Pitch</span>
-                <span className="text-emerald-400 font-bold">{matches.semi1.status}</span>
-              </div>
-              <div className="space-y-1">
-                <div className={`flex justify-between items-center p-2 rounded-xl text-xs font-bold ${
-                  matches.semi1.winner === matches.semi1.teamA 
-                    ? 'bg-[#090D16] text-white border border-[#00B8D4]/60 shadow-[0_0_10px_rgba(0,184,212,0.2)]' 
-                    : 'bg-[#090D16] text-slate-400'
-                }`}>
-                  <span>{matches.semi1.teamA}</span>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleUpdateMatchScore('semi1', matches.semi1.scoreA + 1, matches.semi1.scoreB, true)}
-                      className="w-5 h-5 rounded bg-white/10 hover:bg-[#00B8D4] hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
-                      title="Add Point & Finalize"
-                    >
-                      +
-                    </button>
-                    <span className="font-mono text-[#00B8D4] font-black">{matches.semi1.scoreA}</span>
+            {displaySemis.length === 0 && (
+              <p className="text-xs text-slate-400">No knockout matches committed to Firestore yet.</p>
+            )}
+            {displaySemis.map((match) => {
+              const winnerName = match.winnerId === match.teamA_Id ? match.teamA_Name : match.winnerId === match.teamB_Id ? match.teamB_Name : undefined;
+              return (
+                <div key={match.id} className="p-4 rounded-2xl bg-[#263238]/60 border border-[#24324F] space-y-2">
+                  <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
+                    <span>R{match.round} #{match.matchNumber} â¢ {match.courtOrField || 'Main Pitch'}</span>
+                    <span className="text-emerald-400 font-bold">{match.status}</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className={`flex justify-between items-center p-2 rounded-xl text-xs font-bold ${
+                      winnerName === match.teamA_Name
+                        ? 'bg-[#090D16] text-white border border-[#00B8D4]/60 shadow-[0_0_10px_rgba(0,184,212,0.2)]'
+                        : 'bg-[#090D16] text-slate-400'
+                    }`}>
+                      <span>{match.teamA_Name || 'TBD'}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleUpdateMatchScore(match, Number(match.teamA_Score || 0) + 1, Number(match.teamB_Score || 0), match.status !== 'FINAL')}
+                          className="w-5 h-5 rounded bg-white/10 hover:bg-[#00B8D4] hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
+                          title="Add Point"
+                        >
+                          +
+                        </button>
+                        <span className="font-mono text-[#00B8D4] font-black">{Number(match.teamA_Score || 0)}</span>
+                      </div>
+                    </div>
+                    <div className={`flex justify-between items-center p-2 rounded-xl text-xs font-bold ${
+                      winnerName === match.teamB_Name
+                        ? 'bg-[#090D16] text-white border border-[#00B8D4]/60'
+                        : 'bg-[#090D16] text-slate-400'
+                    }`}>
+                      <span>{match.teamB_Name || 'TBD'}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleUpdateMatchScore(match, Number(match.teamA_Score || 0), Number(match.teamB_Score || 0) + 1, match.status !== 'FINAL')}
+                          className="w-5 h-5 rounded bg-white/10 hover:bg-[#00B8D4] hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
+                          title="Add Point"
+                        >
+                          +
+                        </button>
+                        <span className="font-mono text-slate-400 font-black">{Number(match.teamB_Score || 0)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-                <div className={`flex justify-between items-center p-2 rounded-xl text-xs font-bold ${
-                  matches.semi1.winner === matches.semi1.teamB 
-                    ? 'bg-[#090D16] text-white border border-[#00B8D4]/60' 
-                    : 'bg-[#090D16] text-slate-400'
-                }`}>
-                  <span>{matches.semi1.teamB}</span>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleUpdateMatchScore('semi1', matches.semi1.scoreA, matches.semi1.scoreB + 1, true)}
-                      className="w-5 h-5 rounded bg-white/10 hover:bg-[#00B8D4] hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
-                      title="Add Point & Finalize"
-                    >
-                      +
-                    </button>
-                    <span className="font-mono text-slate-400 font-black">{matches.semi1.scoreB}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Match 2 */}
-            <div className="p-4 rounded-2xl bg-[#263238]/60 border border-[#24324F] space-y-2">
-              <div className="flex items-center justify-between text-xs text-slate-400 font-mono">
-                <span>Semi #2 • Pitch 2</span>
-                <span className="text-emerald-400 font-bold">{matches.semi2.status}</span>
-              </div>
-              <div className="space-y-1">
-                <div className={`flex justify-between items-center p-2 rounded-xl text-xs font-bold ${
-                  matches.semi2.winner === matches.semi2.teamA 
-                    ? 'bg-[#090D16] text-white border border-[#FF6A00]/60' 
-                    : 'bg-[#090D16] text-slate-400'
-                }`}>
-                  <span>{matches.semi2.teamA}</span>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleUpdateMatchScore('semi2', matches.semi2.scoreA + 1, matches.semi2.scoreB, true)}
-                      className="w-5 h-5 rounded bg-white/10 hover:bg-[#FF6A00] hover:text-white text-[10px] flex items-center justify-center cursor-pointer"
-                      title="Add Point & Finalize"
-                    >
-                      +
-                    </button>
-                    <span className="font-mono text-[#FFC857] font-black">{matches.semi2.scoreA}</span>
-                  </div>
-                </div>
-                <div className={`flex justify-between items-center p-2 rounded-xl text-xs font-bold ${
-                  matches.semi2.winner === matches.semi2.teamB 
-                    ? 'bg-[#090D16] text-white border border-[#FF6A00]/60' 
-                    : 'bg-[#090D16] text-slate-400'
-                }`}>
-                  <span>{matches.semi2.teamB}</span>
-                  <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleUpdateMatchScore('semi2', matches.semi2.scoreA, matches.semi2.scoreB + 1, true)}
-                      className="w-5 h-5 rounded bg-white/10 hover:bg-[#FF6A00] hover:text-white text-[10px] flex items-center justify-center cursor-pointer"
-                      title="Add Point & Finalize"
-                    >
-                      +
-                    </button>
-                    <span className="font-mono text-slate-400 font-black">{matches.semi2.scoreB}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
 
-          {/* Connector Arrow for Desktop */}
           <div className="hidden md:flex flex-col items-center justify-center space-y-6">
             <div className="w-10 h-10 rounded-full bg-[#00B8D4]/15 border border-[#00B8D4]/40 flex items-center justify-center text-[#00B8D4] animate-pulse">
               <ArrowRight className="w-5 h-5" />
@@ -436,70 +462,71 @@ export const PoolBracketEngine: React.FC<PoolBracketEngineProps> = ({
             </span>
           </div>
 
-          {/* Championship Final */}
           <div className="space-y-4">
             <span className="text-[10px] font-mono font-bold text-[#FFC857] uppercase tracking-wider">
               Championship Gold Medal Match
             </span>
-
-            <div className="p-5 rounded-3xl bg-gradient-to-b from-[#263238] to-[#090D16] border-2 border-[#FFC857]/40 space-y-3 shadow-[0_0_25px_rgba(255,200,87,0.15)]">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-[#FFC857] font-black flex items-center gap-1">
-                  <Trophy className="w-3.5 h-3.5" />
-                  <span>Grand Final • 3:30 PM</span>
-                </span>
-                <span className="px-2 py-0.5 rounded bg-amber-500/20 text-[#FFC857] text-[10px] font-bold">
-                  {matches.final.winner ? 'FINAL CHAMPION' : 'Auto-Seeded'}
-                </span>
-              </div>
-
-              <div className="space-y-1.5">
-                <div className={`flex justify-between items-center p-2.5 rounded-xl text-xs font-bold ${
-                  matches.final.winner === matches.final.teamA
-                    ? 'bg-amber-500/20 text-[#FFC857] border border-amber-500/50'
-                    : 'bg-[#090D16] text-white'
-                }`}>
-                  <span>{matches.final.teamA}</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleUpdateMatchScore('final', matches.final.scoreA + 1, matches.final.scoreB, true)}
-                      className="w-5 h-5 rounded bg-white/10 hover:bg-amber-400 hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
-                      title="Add Point & Crown Champion"
-                    >
-                      +
-                    </button>
-                    <span className="font-mono text-[#FFC857] font-black">{matches.final.scoreA}</span>
+            {displayFinals.map((match) => {
+              const winnerName = match.winnerId === match.teamA_Id ? match.teamA_Name : match.winnerId === match.teamB_Id ? match.teamB_Name : undefined;
+              return (
+                <div key={match.id} className="p-5 rounded-3xl bg-gradient-to-b from-[#263238] to-[#090D16] border-2 border-[#FFC857]/40 space-y-3 shadow-[0_0_25px_rgba(255,200,87,0.15)]">
+                  <div className="flex items-center justify-between text-xs font-mono">
+                    <span className="text-[#FFC857] font-black flex items-center gap-1">
+                      <Trophy className="w-3.5 h-3.5" />
+                      <span>Grand Final â¢ {match.scheduledTime || 'TBD'}</span>
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-amber-500/20 text-[#FFC857] text-[10px] font-bold">
+                      {winnerName ? 'FINAL CHAMPION' : match.status}
+                    </span>
                   </div>
-                </div>
-                <div className={`flex justify-between items-center p-2.5 rounded-xl text-xs font-bold ${
-                  matches.final.winner === matches.final.teamB
-                    ? 'bg-amber-500/20 text-[#FFC857] border border-amber-500/50'
-                    : 'bg-[#090D16] text-white'
-                }`}>
-                  <span>{matches.final.teamB}</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handleUpdateMatchScore('final', matches.final.scoreA, matches.final.scoreB + 1, true)}
-                      className="w-5 h-5 rounded bg-white/10 hover:bg-amber-400 hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
-                      title="Add Point & Crown Champion"
-                    >
-                      +
-                    </button>
-                    <span className="font-mono text-[#FFC857] font-black">{matches.final.scoreB}</span>
+                  <div className="space-y-1.5">
+                    <div className={`flex justify-between items-center p-2.5 rounded-xl text-xs font-bold ${
+                      winnerName === match.teamA_Name
+                        ? 'bg-amber-500/20 text-[#FFC857] border border-amber-500/50'
+                        : 'bg-[#090D16] text-white'
+                    }`}>
+                      <span>{match.teamA_Name || 'TBD'}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleUpdateMatchScore(match, Number(match.teamA_Score || 0) + 1, Number(match.teamB_Score || 0), true)}
+                          className="w-5 h-5 rounded bg-white/10 hover:bg-amber-400 hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
+                          title="Add Point & Crown Champion"
+                        >
+                          +
+                        </button>
+                        <span className="font-mono text-[#FFC857] font-black">{Number(match.teamA_Score || 0)}</span>
+                      </div>
+                    </div>
+                    <div className={`flex justify-between items-center p-2.5 rounded-xl text-xs font-bold ${
+                      winnerName === match.teamB_Name
+                        ? 'bg-amber-500/20 text-[#FFC857] border border-amber-500/50'
+                        : 'bg-[#090D16] text-white'
+                    }`}>
+                      <span>{match.teamB_Name || 'TBD'}</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleUpdateMatchScore(match, Number(match.teamA_Score || 0), Number(match.teamB_Score || 0) + 1, true)}
+                          className="w-5 h-5 rounded bg-white/10 hover:bg-amber-400 hover:text-black text-[10px] flex items-center justify-center cursor-pointer"
+                          title="Add Point & Crown Champion"
+                        >
+                          +
+                        </button>
+                        <span className="font-mono text-[#FFC857] font-black">{Number(match.teamB_Score || 0)}</span>
+                      </div>
+                    </div>
                   </div>
+                  {winnerName && (
+                    <div className="mt-3 p-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-center space-y-1">
+                      <div className="flex items-center justify-center gap-1.5 text-amber-400 font-mono font-black text-xs">
+                        <Trophy className="w-4 h-4 text-amber-400" />
+                        <span>TOURNAMENT CHAMPIONS</span>
+                      </div>
+                      <div className="text-white font-black text-sm">{winnerName}</div>
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              {matches.final.winner && (
-                <div className="mt-3 p-3 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-center space-y-1">
-                  <div className="flex items-center justify-center gap-1.5 text-amber-400 font-mono font-black text-xs">
-                    <Trophy className="w-4 h-4 text-amber-400" />
-                    <span>TOURNAMENT CHAMPIONS</span>
-                  </div>
-                  <div className="text-white font-black text-sm">{matches.final.winner}</div>
-                </div>
-              )}
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>

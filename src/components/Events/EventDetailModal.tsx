@@ -253,7 +253,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       console.warn('Could not persist division to Firestore:', e);
     }
 
-    showToast('success', 'Division Added! 🏆', `Added "${newDivision.name}" (${newDivision.format}) bracket.`);
+    showToast('success', 'Division Added! ð', `Added "${newDivision.name}" (${newDivision.format}) bracket.`);
   };
 
   const handleInviteStaff = async (newStaff: EventStaffMember) => {
@@ -300,7 +300,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       console.warn('Could not persist staff to Firestore:', e);
     }
 
-    showToast('success', 'Staff Member Assigned! 📋', `Assigned ${newStaff.name} as ${newStaff.role} (${newStaff.divisionName || 'All Divisions'}).`);
+    showToast('success', 'Staff Member Assigned! ð', `Assigned ${newStaff.name} as ${newStaff.role} (${newStaff.divisionName || 'All Divisions'}).`);
   };
 
   const handleToggleStaffStatus = async (staffMember: EventStaffMember) => {
@@ -416,7 +416,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       if (onEventUpdated) onEventUpdated(updatedEvent);
       setShowCheckoutConfirmation(false);
       setShowPassModal(true);
-      showToast('success', 'Registration Confirmed! 🎉', `🎯 You are officially locked in for "${event.title}". Digital pass generated.`);
+      showToast('success', 'Registration Confirmed! ð', `ð¯ You are officially locked in for "${event.title}". Digital pass generated.`);
     } catch (err) {
       console.error('Registration failed:', err);
       showToast('error', 'Registration Error', 'Unable to complete registration. Please try again.');
@@ -576,7 +576,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <Calendar className="w-3.5 h-3.5" />
                   {event?.date ?? 'TBD'}
                 </span>
-                <span className="text-slate-300">•</span>
+                <span className="text-slate-300">â¢</span>
                 <span className="text-slate-300 font-medium flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-[#00B8D4]" />
                   {isGenuineKickoffTime(event?.time) ? (
@@ -604,7 +604,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
               </span>
               {timeLeft.isPast ? (
                 <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-mono font-bold animate-pulse">
-                  ⚡ EVENT LIVE / IN PROGRESS
+                  â¡ EVENT LIVE / IN PROGRESS
                 </span>
               ) : (
                 <div className="flex items-center gap-1.5 font-mono text-xs font-black text-white">
@@ -643,7 +643,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     <option value="all" className="bg-[#090D16] text-white">All Divisions ({divisions.length})</option>
                     {divisions.map(div => (
                       <option key={div.id} value={div.id} className="bg-[#090D16] text-white">
-                        {div.name} • {div.format || '5v5 Flag'} ({div.registeredCount || 0}/{div.teamLimit || 12} Teams)
+                        {div.name} â¢ {div.format || '5v5 Flag'} ({div.registeredCount || 0}/{div.teamLimit || 12} Teams)
                       </option>
                     ))}
                   </select>
@@ -658,7 +658,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     title="Launch Tournament Control Center"
                   >
                     <Settings className="w-3.5 h-3.5 animate-spin-slow" />
-                    <span>⚙ Launch Tournament Control Center</span>
+                    <span>â Launch Tournament Control Center</span>
                   </button>
                 )}
 
@@ -744,7 +744,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-mono font-bold text-[#00B8D4] uppercase tracking-wider flex items-center gap-1.5">
                         <Trophy className="w-3.5 h-3.5" />
-                        {(event as any).gameType || 'Official Matchup'} • {event.sport || 'Varsity'}
+                        {(event as any).gameType || 'Official Matchup'} â¢ {event.sport || 'Varsity'}
                       </span>
                       {(event as any).result && (
                         <span className={`px-2 py-0.5 rounded-full text-[10px] font-black font-mono uppercase ${
@@ -801,7 +801,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
                     {(event as any).notes && (
                       <div className="p-2.5 rounded-xl bg-[#090D16]/60 border border-[#24324F] text-[11px] text-[#FFC857] text-center font-mono">
-                        🔥 {(event as any).notes}
+                        ð¥ {(event as any).notes}
                       </div>
                     )}
                   </div>
@@ -911,7 +911,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                       className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#FF6A00] to-[#FFC857] text-[#090D16] font-black text-xs font-mono flex items-center gap-2 shadow-[0_0_15px_rgba(255,106,0,0.3)] hover:brightness-110 active:scale-95 cursor-pointer"
                     >
                       <Settings className="w-4 h-4 animate-spin-slow" />
-                      <span>⚙ Launch Tournament Control Center</span>
+                      <span>â Launch Tournament Control Center</span>
                     </button>
                   </div>
                 )}
@@ -978,7 +978,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                           </div>
                           {isSelected && (
                             <span className="text-[10px] text-[#00B8D4] font-bold font-mono mt-2 block">
-                              ✓ Filter Active
+                              â Filter Active
                             </span>
                           )}
                         </div>
@@ -992,7 +992,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   <div className="flex items-center justify-between">
                     <h3 className="text-xs font-bold text-[#FF6A00] uppercase font-mono tracking-wider flex items-center gap-1.5">
                       <Trophy className="w-3.5 h-3.5" />
-                      Championship Playoff Brackets — {selectedDivision?.name || 'All Divisions'}
+                      Championship Playoff Brackets â {selectedDivision?.name || 'All Divisions'}
                     </h3>
                     <span className="text-[10px] text-slate-400 font-mono">
                       Single & Double Elimination Trees
@@ -1000,6 +1000,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                   </div>
 
                   <PoolBracketEngine 
+                    tournamentId={event?.id || 'live-default'}
                     division={selectedDivision?.name || '14U Girls'} 
                     activeView="brackets" 
                   />
@@ -1028,7 +1029,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         className="px-3 py-1 rounded-xl bg-gradient-to-r from-[#FF6A00] to-[#FFC857] text-[#090D16] font-black text-xs font-mono flex items-center gap-1.5 cursor-pointer shadow-sm hover:brightness-110 active:scale-95"
                       >
                         <Settings className="w-3.5 h-3.5" />
-                        <span>⚙ Open Control Center</span>
+                        <span>â Open Control Center</span>
                       </button>
                     )}
                   </div>
@@ -1036,6 +1037,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
                 {/* Embedded Standings View from PoolBracketEngine */}
                 <PoolBracketEngine 
+                  tournamentId={event?.id || 'live-default'}
                   division={selectedDivision?.name || '14U Girls'} 
                   activeView="standings" 
                 />
@@ -1155,7 +1157,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         TOURNAMENT DIRECTOR
                       </span>
                     </div>
-                    <p className="text-xs text-slate-400">{event.hostRole || 'Director / Organizer'} • {event.organizer}</p>
+                    <p className="text-xs text-slate-400">{event.hostRole || 'Director / Organizer'} â¢ {event.organizer}</p>
                     {event.hostBio && <p className="text-xs text-slate-300 pt-1">{event.hostBio}</p>}
                   </div>
                 </div>
@@ -1263,11 +1265,11 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                             <h4 className="text-xs font-bold text-white flex items-center gap-1">
                               {attendee.name}
                               {attendee.role === 'athlete' && (
-                                <span className="text-[9px] font-black text-[#00B8D4]">★</span>
+                                <span className="text-[9px] font-black text-[#00B8D4]">â</span>
                               )}
                             </h4>
                             <p className="text-[10px] text-slate-400">
-                              {attendee.sport || event.sport} {attendee.classYear ? `• Class of '${attendee.classYear}` : ''}
+                              {attendee.sport || event.sport} {attendee.classYear ? `â¢ Class of '${attendee.classYear}` : ''}
                             </p>
                           </div>
                         </div>
@@ -1450,7 +1452,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                 OFFICIAL ATHLETE CREDENTIAL
               </span>
               <h3 className="text-base font-black text-white uppercase mt-1">{event?.title ?? 'Showcase Event'}</h3>
-              <p className="text-xs text-slate-400 mt-0.5">{event?.date ?? 'TBD'} • {event?.venueName || event?.location || 'Athletic Facility'}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{event?.date ?? 'TBD'} â¢ {event?.venueName || event?.location || 'Athletic Facility'}</p>
             </div>
 
             {/* QR Pass Box */}

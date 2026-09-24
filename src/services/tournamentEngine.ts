@@ -3,7 +3,6 @@ import {
   collection, 
   doc, 
   getDoc, 
-  getDocs, 
   setDoc, 
   updateDoc, 
   query, 
@@ -275,7 +274,7 @@ export async function advanceTournamentBracketMatch(
     }
 
     if (!db) {
-      return { success: true, winnerId, winnerName: 'Winner' };
+      throw new Error('Firestore is not initialized; bracket advancement cannot be committed.');
     }
 
     const gameRef = doc(db, 'games', gameId);
@@ -313,7 +312,26 @@ export async function advanceTournamentBracketMatch(
           ...slotUpdate,
           updatedAt: serverTimestamp()
         });
+        await setDoc(doc(db, 'games', matchData.nextMatchId), {
+          id: matchData.nextMatchId,
+          tournamentId,
+          ...slotUpdate,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
       }
+
+      await setDoc(doc(db, 'games', gameId), {
+        id: gameId,
+        tournamentId,
+        teamA_Score: finalScoreA,
+        teamB_Score: finalScoreB,
+        homeScore: finalScoreA,
+        awayScore: finalScoreB,
+        winnerId: actualWinnerId,
+        loserId: actualLoserId,
+        status: 'FINAL',
+        updatedAt: serverTimestamp()
+      }, { merge: true });
 
       return {
         success: true,
@@ -351,7 +369,25 @@ export async function advanceTournamentBracketMatch(
         [slotFieldName]: actualWinnerName,
         updatedAt: serverTimestamp()
       });
+      await setDoc(doc(db, `tournaments/${tournamentId}/matches`, gameData.nextMatchId), {
+        id: gameData.nextMatchId,
+        tournamentId,
+        [slotFieldId]: actualWinnerId,
+        [slotFieldName]: actualWinnerName,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
     }
+
+    await setDoc(doc(db, `tournaments/${tournamentId}/matches`, gameId), {
+      id: gameId,
+      tournamentId,
+      teamA_Score: finalScoreA,
+      teamB_Score: finalScoreB,
+      winnerId: actualWinnerId,
+      loserId: actualLoserId,
+      status: 'FINAL',
+      updatedAt: serverTimestamp()
+    }, { merge: true });
 
     return {
       success: true,
@@ -412,7 +448,10 @@ export async function commitBracketToFirestore(
   tournamentId: string,
   matches: BracketNodeMatch[]
 ): Promise<number> {
-  if (!db || matches.length === 0) return 0;
+  if (!db) {
+    throw new Error('Firestore is not initialized; generated brackets cannot be committed.');
+  }
+  if (matches.length === 0) return 0;
 
   let totalCommitted = 0;
   const CHUNK_SIZE = 400; // Under 500 limit
@@ -461,4 +500,117 @@ export async function commitBracketToFirestore(
   }
 
   return totalCommitted;
+}
+
+function normalizeMatchDoc(id: string, data: Record<string, any>, fallbackTournamentId: string): BracketNodeMatch {
+  return {
+    id,
+    tournamentId: data.tournamentId || fallbackTournamentId,
+    bracketType: data.bracketType || 'SINGLE_ELIMINATION',
+    round: Number(data.round || 1),
+    matchNumber: Number(data.matchNumber || 0),
+    bracketSection: data.bracketSection,
+    teamA_Id: data.teamA_Id || data.homeTeamId || '',
+    teamA_Name: data.teamA_Name || data.homeTeam || data.homeTeamName || 'TBD',
+    teamA_Seed: data.teamA_Seed,
+    teamA_Score: Number(data.teamA_Score ?? data.homeScore ?? 0),
+    teamB_Id: data.teamB_Id || data.awayTeamId || '',
+    teamB_Name: data.teamB_Name || data.awayTeam || data.awayTeamName || 'TBD',
+    teamB_Seed: data.teamB_Seed,
+    teamB_Score: Number(data.teamB_Score ?? data.awayScore ?? 0),
+    winnerId: data.winnerId,
+    loserId: data.loserId,
+    nextMatchId: data.nextMatchId,
+    nextMatchSlot: data.nextMatchSlot,
+    loserMatchId: data.loserMatchId,
+    status: data.status || 'SCHEDULED',
+    scheduledTime: data.scheduledTime || data.startTime,
+    courtOrField: data.courtOrField || data.courtName || data.court,
+    division: data.division,
+  };
+}
+
+/**
+ * Subscribe to live matches for a tournament (`tournaments/{id}/matches`),
+ * falling back to the top-level `games` collection filtered by tournamentId.
+ */
+export function subscribeTournamentMatches(
+  tournamentId: string,
+  onUpdate: (matches: BracketNodeMatch[]) => void,
+  onError?: (err: Error) => void
+): Unsubscribe {
+  if (!db || !tournamentId) {
+    onUpdate([]);
+    return () => {};
+  }
+
+  const emit = (docs: { id: string; data: () => any }[]) => {
+    onUpdate(docs.map((snap) => normalizeMatchDoc(snap.id, snap.data() || {}, tournamentId)));
+  };
+
+  let gamesUnsub: Unsubscribe | null = null;
+  const matchesRef = collection(db, `tournaments/${tournamentId}/matches`);
+  const matchesUnsub = onSnapshot(
+    matchesRef,
+    (snapshot) => {
+      if (!snapshot.empty) {
+        if (gamesUnsub) {
+          gamesUnsub();
+          gamesUnsub = null;
+        }
+        emit(snapshot.docs);
+        return;
+      }
+      if (gamesUnsub) return;
+      try {
+        const fallbackQ = query(collection(db, 'games'), where('tournamentId', '==', tournamentId));
+        gamesUnsub = onSnapshot(
+          fallbackQ,
+          (gamesSnap) => emit(gamesSnap.docs),
+          (err) => {
+            console.warn('Tournament games fallback listener warning:', err);
+            onUpdate([]);
+            if (onError) onError(err as Error);
+          }
+        );
+      } catch (err: any) {
+        onUpdate([]);
+        if (onError) onError(err);
+      }
+    },
+    (err) => {
+      console.warn('Tournament matches snapshot listener warning:', err);
+      if (onError) onError(err as Error);
+    }
+  );
+
+  return () => {
+    matchesUnsub();
+    if (gamesUnsub) gamesUnsub();
+  };
+}
+
+export async function persistLiveMatchState(
+  tournamentId: string,
+  matchId: string,
+  patch: Record<string, unknown>
+): Promise<void> {
+  if (!db) {
+    throw new Error('Firestore is not initialized; live scores cannot be committed.');
+  }
+  if (!tournamentId || !matchId) {
+    throw new Error('tournamentId and matchId are required to persist live match state.');
+  }
+
+  const payload = {
+    id: matchId,
+    tournamentId,
+    ...patch,
+    updatedAt: serverTimestamp()
+  };
+
+  await Promise.all([
+    setDoc(doc(db, `tournaments/${tournamentId}/matches`, matchId), payload, { merge: true }),
+    setDoc(doc(db, 'games', matchId), payload, { merge: true })
+  ]);
 }

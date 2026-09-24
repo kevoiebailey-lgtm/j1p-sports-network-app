@@ -1,67 +1,158 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { 
   Zap, 
   Play, 
   Pause, 
-  RotateCcw, 
-  Plus, 
-  Minus, 
   CheckCircle2, 
-  ShieldAlert, 
-  Flag 
 } from 'lucide-react';
-import { INITIAL_TOURNAMENT_GAMES } from '../../../lib/platformData';
 import { TournamentGameDoc } from '../../../types/platform';
+import { GlassPanel } from '../../Common/GlassPanel';
+import {
+  advanceTournamentBracketMatch,
+  persistLiveMatchState,
+  subscribeTournamentMatches,
+  BracketNodeMatch,
+} from '../../../services/tournamentEngine';
+
+const DEFAULT_TOURNAMENT_ID = 'live-default';
+
+function engineStatusToDesk(status?: string, period?: string): TournamentGameDoc['status'] {
+  const raw = (period || status || '').toString();
+  const upper = raw.toUpperCase();
+  if (upper === 'FINAL' || raw === 'Final') return 'Final';
+  if (upper === 'HALFTIME' || raw === 'Halftime') return 'Halftime';
+  if (upper === 'WARMUP' || raw === 'Warmup') return 'Warmup';
+  if (upper === 'IN_PROGRESS' || upper === 'LIVE' || raw === 'Live' || raw === '1st Half' || raw === '2nd Half' || raw === 'OT') {
+    return 'Live';
+  }
+  return 'Upcoming';
+}
+
+function deskPeriodToEngineStatus(period: TournamentGameDoc['period']): string {
+  if (period === 'Final') return 'FINAL';
+  if (period === 'Halftime') return 'HALFTIME';
+  if (period === 'Upcoming') return 'SCHEDULED';
+  return 'IN_PROGRESS';
+}
+
+function mapMatchToDeskGame(match: BracketNodeMatch): TournamentGameDoc {
+  const data = match as BracketNodeMatch & Record<string, any>;
+  const period = data.period || (match.status === 'FINAL' ? 'Final' : match.status === 'HALFTIME' ? 'Halftime' : match.status === 'IN_PROGRESS' ? '1st Half' : 'Upcoming');
+  return {
+    id: match.id,
+    tournamentId: match.tournamentId,
+    courtId: data.courtId || match.courtOrField || 'court-1',
+    courtName: match.courtOrField || data.courtName || 'Court 1',
+    scheduledTime: match.scheduledTime || '',
+    homeTeam: match.teamA_Name || 'TBD',
+    homeTeamSeed: match.teamA_Seed,
+    awayTeam: match.teamB_Name || 'TBD',
+    awayTeamSeed: match.teamB_Seed,
+    homeScore: Number(match.teamA_Score ?? 0),
+    awayScore: Number(match.teamB_Score ?? 0),
+    period,
+    clock: data.clock || '12:00',
+    isClockRunning: Boolean(data.isClockRunning),
+    status: engineStatusToDesk(match.status, period),
+    referee: data.referee,
+    division: match.division || 'Open',
+  };
+}
 
 export const DirectorScoreDeskTab: React.FC = () => {
-  const [games, setGames] = useState<TournamentGameDoc[]>(INITIAL_TOURNAMENT_GAMES);
-  const [selectedGameId, setSelectedGameId] = useState<string>(games[0]?.id || '');
+  const { tournamentId: routeTournamentId } = useParams<{ tournamentId?: string }>();
+  const tournamentId = routeTournamentId || DEFAULT_TOURNAMENT_ID;
+  const [games, setGames] = useState<TournamentGameDoc[]>([]);
+  const [selectedGameId, setSelectedGameId] = useState<string>('');
   const [auditNotice, setAuditNotice] = useState<string | null>(null);
+  const [commitError, setCommitError] = useState<string | null>(null);
 
-  const activeGame = games.find(g => g.id === selectedGameId) || games[0];
+  useEffect(() => {
+    const unsub = subscribeTournamentMatches(tournamentId, (matches) => {
+      const mapped = matches.map(mapMatchToDeskGame);
+      setGames(mapped);
+      setSelectedGameId((current) => {
+        if (current && mapped.some((g) => g.id === current)) return current;
+        return mapped[0]?.id || '';
+      });
+    }, (err) => setCommitError(err.message));
+    return () => unsub();
+  }, [tournamentId]);
 
-  const updateScore = (team: 'home' | 'away', delta: number) => {
-    setGames(games.map(g => {
-      if (g.id === activeGame.id) {
-        const current = team === 'home' ? g.homeScore : g.awayScore;
-        const newScore = Math.max(0, current + delta);
-        return team === 'home' ? { ...g, homeScore: newScore } : { ...g, awayScore: newScore };
-      }
-      return g;
-    }));
-  };
+  const activeGame = useMemo(
+    () => games.find(g => g.id === selectedGameId) || games[0],
+    [games, selectedGameId]
+  );
 
-  const updatePeriod = (period: TournamentGameDoc['period']) => {
-    setGames(games.map(g => {
-      if (g.id === activeGame.id) {
-        const isFinal = period === 'Final';
-        return { 
-          ...g, 
-          period, 
-          status: isFinal ? 'Final' : period === 'Upcoming' ? 'Upcoming' : 'Live' 
-        };
-      }
-      return g;
-    }));
-    setAuditNotice(`Game status updated to: ${period}`);
+  const showNotice = (message: string) => {
+    setAuditNotice(message);
     setTimeout(() => setAuditNotice(null), 2500);
   };
 
-  const toggleClock = () => {
-    setGames(games.map(g => {
-      if (g.id === activeGame.id) {
-        return { ...g, isClockRunning: !g.isClockRunning };
+  const commitPatch = async (game: TournamentGameDoc, patch: Partial<TournamentGameDoc>, extras: Record<string, unknown> = {}) => {
+    setCommitError(null);
+    try {
+      await persistLiveMatchState(tournamentId, game.id, {
+        teamA_Score: patch.homeScore ?? game.homeScore,
+        teamB_Score: patch.awayScore ?? game.awayScore,
+        homeScore: patch.homeScore ?? game.homeScore,
+        awayScore: patch.awayScore ?? game.awayScore,
+        period: patch.period ?? game.period,
+        clock: patch.clock ?? game.clock,
+        isClockRunning: patch.isClockRunning ?? game.isClockRunning,
+        status: deskPeriodToEngineStatus(patch.period ?? game.period),
+        courtOrField: game.courtName,
+        courtName: game.courtName,
+        teamA_Name: game.homeTeam,
+        teamB_Name: game.awayTeam,
+        division: game.division,
+        ...extras,
+      });
+    } catch (err: any) {
+      setCommitError(err?.message || 'Failed to commit live score to Firestore.');
+    }
+  };
+
+  const updateScore = (team: 'home' | 'away', delta: number) => {
+    if (!activeGame) return;
+    const nextHome = team === 'home' ? Math.max(0, activeGame.homeScore + delta) : activeGame.homeScore;
+    const nextAway = team === 'away' ? Math.max(0, activeGame.awayScore + delta) : activeGame.awayScore;
+    void commitPatch(activeGame, { homeScore: nextHome, awayScore: nextAway });
+  };
+
+  const updatePeriod = async (period: TournamentGameDoc['period']) => {
+    if (!activeGame) return;
+    await commitPatch(activeGame, { period, status: engineStatusToDesk(undefined, period) });
+    showNotice(`Game status updated to: ${period}`);
+    if (period === 'Final') {
+      try {
+        const result = await advanceTournamentBracketMatch(
+          tournamentId,
+          activeGame.id,
+          activeGame.homeScore,
+          activeGame.awayScore
+        );
+        showNotice(`Final recorded. Winner advanced: ${result.winnerName}`);
+      } catch (err: any) {
+        setCommitError(err?.message || 'Could not advance the bracket after final.');
       }
-      return g;
-    }));
+    }
+  };
+
+  const toggleClock = () => {
+    if (!activeGame) return;
+    void commitPatch(activeGame, {
+      isClockRunning: !activeGame.isClockRunning,
+      status: !activeGame.isClockRunning ? 'Live' : activeGame.status,
+    });
   };
 
   return (
     <div className="space-y-5 animate-fadeIn">
       
       {/* Header */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <GlassPanel className="rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-[#FF6A00]" />
@@ -70,7 +161,7 @@ export const DirectorScoreDeskTab: React.FC = () => {
             </h1>
           </div>
           <p className="text-xs text-slate-400 font-medium mt-0.5">
-            Instant 1-Tap Score Entry & Running Clock Control for Court Officials
+            Instant 1-Tap Score Entry committed to Firestore for {tournamentId}
           </p>
         </div>
 
@@ -81,20 +172,32 @@ export const DirectorScoreDeskTab: React.FC = () => {
               key={g.id}
               onClick={() => setSelectedGameId(g.id)}
               className={`min-h-[48px] px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                g.id === activeGame.id ? 'bg-[#FF6A00] text-white shadow-md font-black' : 'text-slate-300 hover:text-white'
+                g.id === activeGame?.id ? 'bg-[#FF6A00] text-white shadow-md font-black' : 'text-slate-300 hover:text-white'
               }`}
             >
-              {g.courtName.split(' ')[0]} {g.courtName.split(' ')[1]}
+              {g.courtName}
             </button>
           ))}
         </div>
-      </div>
+      </GlassPanel>
 
       {auditNotice && (
         <div className="p-3.5 rounded-xl bg-emerald-950 border border-emerald-500/50 text-xs text-emerald-200 flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           <span>{auditNotice}</span>
         </div>
+      )}
+
+      {commitError && (
+        <div className="p-3.5 rounded-xl bg-red-950 border border-red-500/50 text-xs text-red-200">
+          {commitError}
+        </div>
+      )}
+
+      {!activeGame && (
+        <GlassPanel className="rounded-2xl p-6 text-sm text-slate-300">
+          No live matches published for this tournament yet. Generate and commit a bracket from the tournament engine to start scoring.
+        </GlassPanel>
       )}
 
       {/* ACTIVE SCOREBOARD CONSOLE */}
@@ -233,8 +336,8 @@ export const DirectorScoreDeskTab: React.FC = () => {
 
           {/* Official Certification Footer */}
           <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-800">
-            <span>Scorekeeper: Director Desk Audit Mode</span>
-            <span>Court Lead Ref: <strong className="text-slate-200">{activeGame.referee}</strong></span>
+            <span>Scorekeeper: Director Desk Â· Firestore live</span>
+            <span>Court Lead Ref: <strong className="text-slate-200">{activeGame.referee || 'Unassigned'}</strong></span>
           </div>
 
         </div>

@@ -123,9 +123,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole>(() => {
     if (!auth.currentUser) return 'athlete';
     try {
-      const savedRole = localStorage.getItem('just1play_user_role');
-      if (savedRole) {
-        return savedRole as UserRole;
+      const savedProfile = localStorage.getItem('just1play_user_profile');
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile);
+        if (parsed?.uid === auth.currentUser.uid && parsed?.role) {
+          return parsed.role as UserRole;
+        }
       }
     } catch (e) {
       console.warn('Failed to parse saved user role:', e);
@@ -261,6 +264,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // 0. Handle Google Auth redirect result on mount for PWA Standalone and mobile browser redirection
   useEffect(() => {
+    try {
+      localStorage.removeItem('just1play_admin_key_authenticated');
+    } catch {
+      // ignore
+    }
     let isSubscribed = true;
 
     const handleRedirectAuthResult = async () => {
@@ -341,10 +349,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const userEmail = (firebaseUser.email || '').toLowerCase().trim();
         const isOwnerAdmin = userEmail === 'kevoiebailey@gmail.com';
-        const isAdminKeyAuthed = typeof window !== 'undefined' && localStorage.getItem('just1play_admin_key_authenticated') === 'true';
 
-        // Fast Admin Bypass: If authorized platform owner/admin by email or admin key, bypass Firestore latency to prevent lockouts
-        if (isOwnerAdmin || isAdminKeyAuthed) {
+        // Fast Admin Bypass: only a verified Firebase Auth session with the owner email
+        // may skip role-loading latency. Passkey/localStorage flags are not authoritative.
+        if (isOwnerAdmin) {
           setRole('admin');
           setIsRoleLoading(false);
           setLoading(false);
@@ -370,7 +378,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const fetchedData = await fetchUserDocFast(firebaseUser.uid);
           const isDocAdmin = fetchedData?.role === 'admin' || (fetchedData as any)?.isAdmin === true;
-          const isSuperAdmin = isOwnerAdmin || hasAdminClaim || isDocAdmin || isAdminKeyAuthed;
+          const isSuperAdmin = isOwnerAdmin || hasAdminClaim || isDocAdmin;
 
           if (fetchedData) {
             const effectiveRole: UserRole = isSuperAdmin ? 'admin' : ((fetchedData.role as UserRole) || 'member');
@@ -508,13 +516,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (auth.currentUser) {
               await updateProfile(auth.currentUser, { displayName: 'Platform Administrator' });
             }
-          } catch {
-            // Provide verified owner administrator session
-            resUser = {
-              uid: 'admin-super-master-uid',
-              email: cleanEmail,
-              displayName: 'Platform Administrator'
-            };
+          } catch (createErr) {
+            throw createErr;
           }
         } else if (
           authErr?.code === 'auth/invalid-credential' || 
@@ -928,40 +931,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           throw new Error('Google Sign-In was interrupted. Please try again.');
         }
       } else if (error?.code === 'auth/unauthorized-domain') {
-        console.warn('Firebase Auth notice: Domain unauthorized for Google Auth. Activating owner admin session fallback.');
-        const fallbackProfile: UserProfile = {
-          uid: 'google-owner-preview-uid',
-          email: 'kevoiebailey@gmail.com',
-          displayName: 'Kevoie Bailey',
-          photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-          role: 'admin',
-          isVerified: true,
-          hasCompletedOnboarding: true,
-          profileCompleted: true,
-          roleLocked: true,
-          orgAffiliation: 'Just1Play Executive Operations',
-          sport: 'Basketball',
-          city: 'Newark',
-          state: 'NJ',
-          position: 'Operations Director',
-          height: '6\'2"',
-          weight: '195 lbs',
-          gradYear: '2026',
-          highSchool: 'Just1Play HQ',
-          gpa: '4.0',
-          bio: 'Just1Play Platform Administrator & Operations Director.',
-          social: {},
-          stats: { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 },
-          mediaUrls: [],
-          bookmarkedAthleteIds: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-        setProfile(fallbackProfile);
-        setRole('admin');
-        persistLocalState(fallbackProfile, 'admin', []);
-        localStorage.setItem('just1play_admin_key_authenticated', 'true');
-        return fallbackProfile;
+        console.warn('Firebase Auth notice: Domain unauthorized for Google Auth.');
       }
       throw error;
     } finally {
@@ -1048,88 +1018,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return regResult;
   };
 
-  // Admin Key Passkey / Pre-Shared Token Authentication & Onboarding Bypass
-  const signInWithAdminKey = async (adminKey: string, adminEmail?: string): Promise<UserProfile> => {
-    setLoading(true);
+  // Admin passkeys are disabled. Role comes from Firebase Auth + users/{uid} only.
+  const signInWithAdminKey = async (_adminKey: string, _adminEmail?: string): Promise<UserProfile> => {
     try {
-      const trimmedKey = (adminKey || '').trim();
-      const envAdminKey = (((import.meta as any).env?.VITE_ADMIN_ACCESS_KEY as string) || '').trim();
-      const acceptedKeys = [
-        envAdminKey,
-        'J1P-ADMIN-MASTER-KEY-2026',
-        'just1play-admin-bypass-2026',
-        'just1play-super-admin-key'
-      ].filter(Boolean);
-
-      if (!acceptedKeys.includes(trimmedKey)) {
-        throw new Error('Invalid Admin Passkey. Please verify your administrative access credentials.');
-      }
-
-      const email = (adminEmail?.trim() || 'kevoiebailey@gmail.com').toLowerCase();
-      const adminUid = user?.uid || 'admin-super-master-uid';
-      
-      const adminProfile: UserProfile = {
-        uid: adminUid,
-        email: email,
-        displayName: 'Just1Play Super Admin',
-        role: 'admin',
-        photoURL: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&auto=format&fit=crop&q=80',
-        isVerified: true,
-        hasCompletedOnboarding: true,
-        profileCompleted: true,
-        roleLocked: true,
-        orgAffiliation: 'Just1Play Executive Operations',
-        sport: 'Basketball',
-        city: 'Newark',
-        state: 'NJ',
-        position: 'Operations Director',
-        height: '6\'2"',
-        weight: '195 lbs',
-        gradYear: '2026',
-        highSchool: 'Just1Play Executive Operations',
-        gpa: '4.0',
-        bio: 'Just1Play Platform Administrator & Global Operations Director. Full access to administrative desks, tournament brackets, and media assets.',
-        social: {},
-        stats: { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0 },
-        mediaUrls: [],
-        bookmarkedAthleteIds: [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      setProfile(adminProfile);
-      setRole('admin');
-      persistLocalState(adminProfile, 'admin', []);
-      localStorage.setItem('just1play_admin_key_authenticated', 'true');
-      localStorage.setItem('just1play_user_role', 'admin');
-      localStorage.setItem('just1play_active_role', 'admin');
-
-      // Update Zustand AppStore if active
-      try {
-        useAppStore.getState().setProfile(adminProfile);
-        useAppStore.getState().setRole('admin');
-      } catch (err) {
-        console.warn('App store sync warning on admin key auth:', err);
-      }
-
-      // Sync to Firestore in background
-      if (!isFirestoreQuotaExceeded()) {
-        safeSetDoc(doc(db, 'users', adminUid), {
-          ...adminProfile,
-          role: 'admin',
-          roleLocked: true,
-          hasCompletedOnboarding: true,
-          updatedAt: new Date().toISOString()
-        }, { merge: true }).catch((err) => {
-          console.warn('Firestore admin key profile sync notice:', err);
-        });
-      }
-
-      return adminProfile;
-    } finally {
-      setLoading(false);
+      localStorage.removeItem('just1play_admin_key_authenticated');
+    } catch {
+      // ignore
     }
+    throw new Error(
+      'Admin passkeys are disabled. Sign in with Google or email. Director/admin access is granted from Firebase Auth custom claims or your user profile role.'
+    );
   };
 
   const signInGuest = async (defaultRole: UserRole = 'athlete'): Promise<UserProfile> => {
@@ -1206,6 +1104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('just1play_user_role');
       localStorage.removeItem('just1play_active_role');
       localStorage.removeItem('just1play_bookmarks');
+      localStorage.removeItem('just1play_admin_key_authenticated');
     } catch (e) {
       console.warn('Local storage clear warning:', e);
     }
@@ -1375,7 +1274,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isOwnerAdmin = (user?.email || '').toLowerCase().trim() === 'kevoiebailey@gmail.com';
-  const isAdminKeyAuthed = typeof window !== 'undefined' && localStorage.getItem('just1play_admin_key_authenticated') === 'true';
 
   // Normalize role checking so casing does not cause false denials
   const isRoleAdmin = Boolean(
@@ -1387,12 +1285,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 
   const isAdmin = Boolean(
-    isOwnerAdmin ||
-    isAdminKeyAuthed ||
-    isRoleAdmin ||
-    customClaims?.admin === true ||
-    customClaims?.role === 'admin' ||
-    customClaims?.superadmin === true
+    Boolean(user) && (
+      isOwnerAdmin ||
+      isRoleAdmin ||
+      customClaims?.admin === true ||
+      customClaims?.role === 'admin' ||
+      customClaims?.superadmin === true
+    )
   );
   const isLoading = loading || isRoleLoading;
 
